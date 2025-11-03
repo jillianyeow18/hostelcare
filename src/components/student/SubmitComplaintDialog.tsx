@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,7 @@ const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplain
   const [photos, setPhotos] = useState<File[]>([]);
 
   // Load user profile data
-  useState(() => {
+  useEffect(() => {
     const loadProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -51,17 +51,13 @@ const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplain
         
         if (data) {
           setProfile(data);
-          // Auto-populate location
-          if (data.desasiswa && data.room_number) {
-            setLocation(`${data.desasiswa}, Room ${data.room_number}`);
-          }
         }
       }
     };
     if (open) {
       loadProfile();
     }
-  });
+  }, [open]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -187,11 +183,32 @@ const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplain
             </Select>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="desasiswa">Desasiswa</Label>
+              <Input
+                id="desasiswa"
+                value={profile?.desasiswa || ""}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="room_number">Room Number</Label>
+              <Input
+                id="room_number"
+                value={profile?.room_number || ""}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="location">Specific Location</Label>
             <Input
               id="location"
-              placeholder="e.g., Desasiswa A, Room 201"
+              placeholder="e.g., Bathroom, Kitchen, Living area"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               required
