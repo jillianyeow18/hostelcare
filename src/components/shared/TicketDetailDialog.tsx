@@ -36,13 +36,20 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<any[]>([]);
   const [attachments, setAttachments] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       loadComments();
       loadAttachments();
+      getCurrentUser();
     }
   }, [open, ticket.id]);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+  };
 
   const loadComments = async () => {
     const { data } = await supabase
@@ -124,6 +131,40 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
     } catch (error: any) {
       toast({
         title: "Failed to add comment",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssignToSelf = async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("tickets")
+        .update({ 
+          assigned_to: user.id,
+          status: ticket.status === "pending" ? "assigned" : ticket.status
+        })
+        .eq("id", ticket.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Ticket assigned",
+        description: "You have been assigned to this ticket.",
+      });
+
+      onUpdate();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Assignment failed",
         description: error.message,
         variant: "destructive",
       });
@@ -224,6 +265,24 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
           {role === "staff" && (
             <div className="space-y-3 pt-4 border-t">
               <h4 className="font-semibold">Staff Actions</h4>
+              
+              {/* Assign to Self */}
+              {!ticket.assigned_to || ticket.assigned_to !== currentUserId ? (
+                <Button 
+                  onClick={handleAssignToSelf} 
+                  disabled={loading}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Assign to Me
+                </Button>
+              ) : (
+                <div className="bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm text-center">
+                  ✓ Assigned to you
+                </div>
+              )}
+
+              {/* Status Update */}
               <div className="flex gap-3">
                 <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger className="flex-1">

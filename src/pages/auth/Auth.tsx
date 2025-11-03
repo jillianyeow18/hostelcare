@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/hostelcare-logo.png";
 
@@ -249,12 +250,19 @@ const Auth = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="desasiswa">Desasiswa</Label>
-                        <Input
-                          id="desasiswa"
-                          placeholder="Desasiswa A"
-                          value={desasiswa}
-                          onChange={(e) => setDesasiswa(e.target.value)}
-                        />
+                        <Select value={desasiswa} onValueChange={setDesasiswa}>
+                          <SelectTrigger id="desasiswa">
+                            <SelectValue placeholder="Select hostel" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Desasiswa A">Desasiswa A</SelectItem>
+                            <SelectItem value="Desasiswa B">Desasiswa B</SelectItem>
+                            <SelectItem value="Desasiswa C">Desasiswa C</SelectItem>
+                            <SelectItem value="Desasiswa D">Desasiswa D</SelectItem>
+                            <SelectItem value="Desasiswa E">Desasiswa E</SelectItem>
+                            <SelectItem value="Desasiswa F">Desasiswa F</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </>
