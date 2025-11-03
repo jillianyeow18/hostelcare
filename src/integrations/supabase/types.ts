@@ -101,6 +101,75 @@ export type Database = {
           },
         ]
       }
+      discussion_channels: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      discussion_messages: {
+        Row: {
+          author_id: string
+          channel_id: string
+          content: string
+          created_at: string | null
+          id: string
+          ticket_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          channel_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          ticket_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          channel_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          ticket_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discussion_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "discussion_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discussion_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           contact_number: string | null
@@ -111,6 +180,7 @@ export type Database = {
           id: string
           role: string
           room_number: string | null
+          staff_category: string | null
           student_id: string | null
           updated_at: string
         }
@@ -123,6 +193,7 @@ export type Database = {
           id: string
           role: string
           room_number?: string | null
+          staff_category?: string | null
           student_id?: string | null
           updated_at?: string
         }
@@ -135,6 +206,7 @@ export type Database = {
           id?: string
           role?: string
           room_number?: string | null
+          staff_category?: string | null
           student_id?: string | null
           updated_at?: string
         }

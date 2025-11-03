@@ -29,6 +29,7 @@ const Auth = () => {
   const [roomNumber, setRoomNumber] = useState("");
   const [desasiswa, setDesasiswa] = useState("");
   const [contactNumber, setContactNumber] = useState("");
+  const [staffCategory, setStaffCategory] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +100,7 @@ const Auth = () => {
             room_number: role === "student" ? roomNumber : null,
             desasiswa: role === "student" ? desasiswa : null,
             contact_number: contactNumber,
+            staff_category: role === "staff" ? staffCategory : null,
           })
           .eq("id", data.user.id);
 
@@ -266,6 +268,25 @@ const Auth = () => {
                       </div>
                     </div>
                   </>
+                )}
+
+                {role === "staff" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="staff-category">Team Category</Label>
+                    <Select value={staffCategory} onValueChange={setStaffCategory} required>
+                      <SelectTrigger id="staff-category">
+                        <SelectValue placeholder="Select your team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="plumbing">Plumbing</SelectItem>
+                        <SelectItem value="electrical">Electrical</SelectItem>
+                        <SelectItem value="furniture">Furniture</SelectItem>
+                        <SelectItem value="cleaning">Cleaning</SelectItem>
+                        <SelectItem value="security">Security</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
 
                 <div className="space-y-2">

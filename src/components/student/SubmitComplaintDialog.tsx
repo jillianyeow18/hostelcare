@@ -30,12 +30,38 @@ interface SubmitComplaintDialogProps {
 const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplaintDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const [urgency, setUrgency] = useState("medium");
   const [photos, setPhotos] = useState<File[]>([]);
+
+  // Load user profile data
+  useState(() => {
+    const loadProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("desasiswa, room_number")
+          .eq("id", user.id)
+          .single();
+        
+        if (data) {
+          setProfile(data);
+          // Auto-populate location
+          if (data.desasiswa && data.room_number) {
+            setLocation(`${data.desasiswa}, Room ${data.room_number}`);
+          }
+        }
+      }
+    };
+    if (open) {
+      loadProfile();
+    }
+  });
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
