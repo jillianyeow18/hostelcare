@@ -133,6 +133,7 @@ export type Database = {
           created_at: string | null
           id: string
           ticket_id: string | null
+          type: string
           updated_at: string | null
         }
         Insert: {
@@ -142,6 +143,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           ticket_id?: string | null
+          type?: string
           updated_at?: string | null
         }
         Update: {
@@ -151,6 +153,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           ticket_id?: string | null
+          type?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -311,6 +314,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      post_system_message_to_channel: {
+        Args: { p_category: string; p_content: string; p_ticket_id?: string }
+        Returns: undefined
       }
     }
     Enums: {

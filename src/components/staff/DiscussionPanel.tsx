@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Ticket } from "lucide-react";
+import { Send, Ticket, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface DiscussionPanelProps {
   channelId: string;
@@ -115,6 +116,7 @@ const DiscussionPanel = ({ channelId, channelName, currentUserId }: DiscussionPa
         channel_id: channelId,
         author_id: currentUserId,
         content: newMessage.trim(),
+        type: "user",
       });
 
       if (error) throw error;
@@ -128,6 +130,21 @@ const DiscussionPanel = ({ channelId, channelName, currentUserId }: DiscussionPa
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderMessageContent = (content: string) => {
+    // Parse markdown-style bold text
+    const parts = content.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  const isEscalation = (content: string) => {
+    return content.includes("🚨") || content.includes("Critical Escalation");
   };
 
   return (
@@ -150,38 +167,83 @@ const DiscussionPanel = ({ channelId, channelName, currentUserId }: DiscussionPa
               <p>No messages yet. Start the conversation!</p>
             </div>
           ) : (
-            messages.map((message) => (
-              <div key={message.id} className="flex gap-3">
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                    {message.profiles?.full_name?.charAt(0) || "S"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="font-semibold text-sm">
-                      {message.profiles?.full_name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(message.created_at), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                  </div>
-                  <div className="text-sm">
-                    {message.ticket_id && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 bg-muted/50 rounded px-2 py-1 w-fit">
-                        <Ticket className="h-3 w-3" />
-                        <span>{message.tickets?.title}</span>
-                      </div>
+            messages.map((message) => {
+              const isSystem = message.type === "system";
+              const isEscalationMsg = isSystem && isEscalation(message.content);
+
+              if (isSystem) {
+                return (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "rounded-lg border-l-4 p-4 my-3",
+                      isEscalationMsg
+                        ? "bg-destructive/10 border-destructive"
+                        : "bg-primary/10 border-primary"
                     )}
-                    <p className="text-foreground whitespace-pre-wrap break-words">
-                      {message.content}
-                    </p>
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarFallback className={cn(
+                          "text-xs",
+                          isEscalationMsg ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"
+                        )}>
+                          {isEscalationMsg ? <AlertTriangle className="h-4 w-4" /> : "HC"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <span className="font-semibold text-sm">
+                            HostelCare
+                          </span>
+                          <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                            APP
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(message.created_at), {
+                              addSuffix: true,
+                            })}
+                          </span>
+                        </div>
+                        <div className={cn(
+                          "text-sm whitespace-pre-wrap",
+                          isEscalationMsg ? "text-destructive-foreground" : ""
+                        )}>
+                          {renderMessageContent(message.content)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={message.id} className="flex gap-3">
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {message.profiles?.full_name?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="font-semibold text-sm">
+                        {message.profiles?.full_name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(message.created_at), {
+                          addSuffix: true,
+                        })}
+                      </span>
+                    </div>
+                    <div className="text-sm">
+                      <p className="text-foreground whitespace-pre-wrap break-words">
+                        {message.content}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </ScrollArea>
