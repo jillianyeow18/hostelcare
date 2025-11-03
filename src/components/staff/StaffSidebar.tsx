@@ -21,12 +21,13 @@ const StaffSidebar = ({ profile, staffCategory }: StaffSidebarProps) => {
   };
 
   const categories = [
-    { id: "plumbing", name: "Plumbing", icon: Hash },
     { id: "electrical", name: "Electrical", icon: Hash },
-    { id: "furniture", name: "Furniture", icon: Hash },
+    { id: "plumbing", name: "Plumbing", icon: Hash },
     { id: "cleaning", name: "Cleaning", icon: Hash },
-    { id: "security", name: "Security", icon: Hash },
-    { id: "other", name: "Other", icon: Hash },
+    { id: "hvac", name: "HVAC", icon: Hash },
+    { id: "carpentry", name: "Carpentry", icon: Hash },
+    { id: "painting", name: "Painting", icon: Hash },
+    { id: "general", name: "General", icon: Hash },
   ];
 
   const isActive = (path: string) => location.pathname === path;
