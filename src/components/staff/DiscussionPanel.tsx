@@ -23,7 +23,8 @@ const DiscussionPanel = ({ channelId, channelName, currentUserId }: DiscussionPa
 
   useEffect(() => {
     loadMessages();
-    setupRealtimeSubscription();
+    const cleanup = setupRealtimeSubscription();
+    return cleanup;
   }, [channelId]);
 
   useEffect(() => {
