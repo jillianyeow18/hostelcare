@@ -127,7 +127,7 @@ export type Database = {
       }
       discussion_messages: {
         Row: {
-          author_id: string
+          author_id: string | null
           channel_id: string
           content: string
           created_at: string | null
@@ -137,7 +137,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          author_id: string
+          author_id?: string | null
           channel_id: string
           content: string
           created_at?: string | null
@@ -147,7 +147,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          author_id?: string
+          author_id?: string | null
           channel_id?: string
           content?: string
           created_at?: string | null

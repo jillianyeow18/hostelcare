@@ -168,7 +168,7 @@ const DiscussionPanel = ({ channelId, channelName, currentUserId }: DiscussionPa
             </div>
           ) : (
             messages.map((message) => {
-              const isSystem = message.type === "system";
+              const isSystem = message.type === "system" || !message.author_id;
               const isEscalationMsg = isSystem && isEscalation(message.content);
 
               if (isSystem) {
