@@ -155,6 +155,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "discussion_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "discussion_messages_channel_id_fkey"
             columns: ["channel_id"]
             isOneToOne: false
