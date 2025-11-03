@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import StaffSidebar from "@/components/staff/StaffSidebar";
 import DiscussionPanel from "@/components/staff/DiscussionPanel";
+import CriticalAlertBanner from "@/components/staff/CriticalAlertBanner";
 
 const Discussions = () => {
   const navigate = useNavigate();
@@ -73,6 +74,7 @@ const Discussions = () => {
     <div className="flex h-screen overflow-hidden bg-background">
       <StaffSidebar profile={profile} staffCategory={profile.staff_category} />
       <div className="flex-1 flex flex-col overflow-hidden">
+        <CriticalAlertBanner category={category || ""} />
         <DiscussionPanel
           channelId={channelId}
           channelName={category || ""}
