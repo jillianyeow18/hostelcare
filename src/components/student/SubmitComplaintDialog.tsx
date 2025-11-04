@@ -40,6 +40,7 @@ const SubmitComplaintDialog = ({
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const [urgency, setUrgency] = useState("medium");
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
 
   // Load user profile data
@@ -79,6 +80,40 @@ const SubmitComplaintDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Client-side validation before attempting submission
+    const errors: string[] = [];
+    const allowedUrgency = ["low", "medium", "high", "urgent"];
+
+    if (!title || !title.trim()) errors.push("Title is required.");
+    if (!category || !category.trim()) errors.push("Category is required.");
+    if (!location || !location.trim())
+      errors.push("Specific location is required.");
+    if (!description || !description.trim())
+      errors.push("Description is required.");
+    if (!urgency || !allowedUrgency.includes(urgency))
+      errors.push("Please select a valid urgency level.");
+
+    // Ensure profile has desasiswa and room number (these are shown as disabled inputs)
+    if (!profile?.desasiswa)
+      errors.push("Your desasiswa is not set in your profile.");
+    if (!profile?.room_number)
+      errors.push("Your room number is not set in your profile.");
+
+    // Photos limit (should already be enforced, but double-check)
+    if (photos.length > 5) errors.push("You can upload up to 5 photos only.");
+
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setLoading(false);
+      // show first error in a toast and list others in console for debugging
+      toast({
+        title: "Validation error",
+        description: errors.join(" "),
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const {
@@ -284,7 +319,7 @@ const SubmitComplaintDialog = ({
 
           <div className="space-y-2">
             <Label htmlFor="urgency">Urgency</Label>
-            <Select value={urgency} onValueChange={setUrgency}>
+            <Select value={urgency} onValueChange={setUrgency} required>
               <SelectTrigger id="urgency">
                 <SelectValue />
               </SelectTrigger>

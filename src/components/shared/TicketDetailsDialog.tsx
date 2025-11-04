@@ -13,6 +13,13 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageSquare, Send, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TicketDetailsDialogProps {
   ticket: any;
@@ -32,12 +39,30 @@ const TicketDetailsDialog = ({
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
     if (open && ticket) {
       loadComments();
+      loadUserRole();
     }
   }, [open, ticket]);
+
+  const loadUserRole = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    setUserRole(profile?.role || null);
+  };
 
   const loadComments = async () => {
     setLoading(true);
@@ -53,7 +78,7 @@ const TicketDetailsDialog = ({
 
       // Then get profile info for each comment creator
       if (commentsData && commentsData.length > 0) {
-        const userIds = [...new Set(commentsData.map((c) => c.created_by))];
+        const userIds = [...new Set(commentsData.map((c) => c.author_id))];
         const { data: profilesData, error: profilesError } = await supabase
           .from("profiles")
           .select("id, full_name, role")
@@ -67,7 +92,7 @@ const TicketDetailsDialog = ({
         const commentsWithProfiles = commentsData.map((comment) => ({
           ...comment,
           profiles:
-            profilesData?.find((p) => p.id === comment.created_by) || null,
+            profilesData?.find((p) => p.id === comment.author_id) || null,
         }));
 
         setComments(commentsWithProfiles);
@@ -100,7 +125,7 @@ const TicketDetailsDialog = ({
       const { error } = await supabase.from("comments").insert({
         ticket_id: ticket.id,
         content: newComment.trim(),
-        created_by: user.id,
+        author_id: user.id,
       });
 
       if (error) throw error;
@@ -161,6 +186,43 @@ const TicketDetailsDialog = ({
     return <Badge className={config.className}>{urgency}</Badge>;
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    setUpdatingStatus(true);
+
+    try {
+      const updateData: any = {
+        status: newStatus,
+      };
+
+      // If status is being set to resolved, add resolved_at timestamp
+      if (newStatus === "resolved") {
+        updateData.resolved_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from("tickets")
+        .update(updateData)
+        .eq("id", ticket.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status updated",
+        description: `Ticket status changed to ${newStatus.replace("_", " ")}`,
+      });
+
+      onUpdate(); // Refresh the ticket data
+    } catch (error: any) {
+      toast({
+        title: "Failed to update status",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -177,8 +239,26 @@ const TicketDetailsDialog = ({
           {/* Ticket Info */}
           <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
             <div>
-              <p className="text-sm text-gray-600">Status</p>
-              <div className="mt-1">{getStatusBadge(ticket?.status)}</div>
+              <p className="text-sm text-gray-600 mb-2">Status</p>
+              {userRole === "staff" ? (
+                <Select
+                  value={ticket?.status}
+                  onValueChange={handleStatusChange}
+                  disabled={updatingStatus}
+                >
+                  <SelectTrigger className="w-full bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="assigned">Assigned</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="mt-1">{getStatusBadge(ticket?.status)}</div>
+              )}
             </div>
             <div>
               <p className="text-sm text-gray-600">Urgency</p>
