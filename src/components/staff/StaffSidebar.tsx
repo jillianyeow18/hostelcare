@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Ticket, LogOut } from "lucide-react";
+import { Ticket, LogOut, UserPen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import EditProfileDialog from "@/components/shared/EditProfileDialog";
 import logo from "@/assets/hostelcare-logo.png";
 
 interface StaffSidebarProps {
@@ -13,6 +15,7 @@ interface StaffSidebarProps {
 const StaffSidebar = ({ profile, staffCategory }: StaffSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [showEditProfileDialog, setShowEditProfileDialog] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -75,7 +78,15 @@ const StaffSidebar = ({ profile, staffCategory }: StaffSidebarProps) => {
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-4 border-t">
+      <div className="p-4 border-t space-y-2">
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-muted-foreground"
+          onClick={() => setShowEditProfileDialog(true)}
+        >
+          <UserPen className="h-4 w-4 mr-2" />
+          Edit Profile
+        </Button>
         <Button
           variant="ghost"
           className="w-full justify-start text-muted-foreground"
@@ -85,6 +96,12 @@ const StaffSidebar = ({ profile, staffCategory }: StaffSidebarProps) => {
           Logout
         </Button>
       </div>
+
+      <EditProfileDialog
+        open={showEditProfileDialog}
+        onOpenChange={setShowEditProfileDialog}
+        onUpdate={() => window.location.reload()}
+      />
     </div>
   );
 };

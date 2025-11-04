@@ -17,10 +17,12 @@ import {
   CheckCircle2,
   HelpCircle,
   ChevronDown,
+  UserPen,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SubmitComplaintDialog from "@/components/student/SubmitComplaintDialog";
 import TicketList from "@/components/shared/TicketList";
+import EditProfileDialog from "@/components/shared/EditProfileDialog";
 import logo from "@/assets/hostelcare-logo.png";
 
 const Dashboard = () => {
@@ -30,6 +32,7 @@ const Dashboard = () => {
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [showEditProfileDialog, setShowEditProfileDialog] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
   useEffect(() => {
@@ -143,14 +146,24 @@ const Dashboard = () => {
                 <p className="text-sm text-gray-600">Student Portal</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditProfileDialog(true)}
+                className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
+              >
+                <UserPen className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -320,6 +333,12 @@ const Dashboard = () => {
         open={showSubmitDialog}
         onOpenChange={setShowSubmitDialog}
         onSuccess={loadData}
+      />
+
+      <EditProfileDialog
+        open={showEditProfileDialog}
+        onOpenChange={setShowEditProfileDialog}
+        onUpdate={checkAuth}
       />
     </div>
   );
