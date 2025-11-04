@@ -25,3 +25,9 @@ dist-ssr
 
 # Environment
 .env
+
+# Supabase
+supabase/.temp/
+
+# Lock files (using npm)
+bun.lockb
