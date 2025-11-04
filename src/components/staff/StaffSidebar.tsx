@@ -1,8 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { Ticket, MessageSquare, Hash, LogOut } from "lucide-react";
+import { Ticket, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/hostelcare-logo.png";
 
@@ -19,16 +18,6 @@ const StaffSidebar = ({ profile, staffCategory }: StaffSidebarProps) => {
     await supabase.auth.signOut();
     navigate("/");
   };
-
-  const categories = [
-    { id: "electrical", name: "Electrical", icon: Hash },
-    { id: "plumbing", name: "Plumbing", icon: Hash },
-    { id: "cleaning", name: "Cleaning", icon: Hash },
-    { id: "hvac", name: "HVAC", icon: Hash },
-    { id: "carpentry", name: "Carpentry", icon: Hash },
-    { id: "painting", name: "Painting", icon: Hash },
-    { id: "general", name: "General", icon: Hash },
-  ];
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -49,8 +38,12 @@ const StaffSidebar = ({ profile, staffCategory }: StaffSidebarProps) => {
               {profile?.full_name?.charAt(0) || "S"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{profile?.full_name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{profile?.role}</p>
+              <p className="text-sm font-medium truncate">
+                {profile?.full_name}
+              </p>
+              <p className="text-xs text-muted-foreground capitalize">
+                {profile?.role}
+              </p>
             </div>
           </div>
           {staffCategory && (
@@ -77,35 +70,6 @@ const StaffSidebar = ({ profile, staffCategory }: StaffSidebarProps) => {
               <Ticket className="h-4 w-4 mr-2" />
               All Tickets
             </Button>
-          </div>
-
-          {/* Category Channels */}
-          <div>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-              Team Channels
-            </h3>
-            <div className="space-y-1">
-              {categories
-                .filter(cat => !staffCategory || cat.id === staffCategory)
-                .map((category) => (
-                  <Button
-                    key={category.id}
-                    variant={
-                      isActive(`/staff/discussions/${category.id}`)
-                        ? "secondary"
-                        : "ghost"
-                    }
-                    className={cn(
-                      "w-full justify-start",
-                      staffCategory === category.id && "font-medium"
-                    )}
-                    onClick={() => navigate(`/staff/discussions/${category.id}`)}
-                  >
-                    <category.icon className="h-4 w-4 mr-2" />
-                    {category.name}
-                  </Button>
-                ))}
-            </div>
           </div>
         </div>
       </ScrollArea>

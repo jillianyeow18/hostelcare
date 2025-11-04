@@ -27,7 +27,11 @@ interface SubmitComplaintDialogProps {
   onSuccess: () => void;
 }
 
-const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplaintDialogProps) => {
+const SubmitComplaintDialog = ({
+  open,
+  onOpenChange,
+  onSuccess,
+}: SubmitComplaintDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
@@ -41,14 +45,16 @@ const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplain
   // Load user profile data
   useEffect(() => {
     const loadProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase
           .from("profiles")
           .select("desasiswa, room_number")
           .eq("id", user.id)
           .single();
-        
+
         if (data) {
           setProfile(data);
         }
@@ -75,10 +81,30 @@ const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplain
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("User not authenticated");
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to submit a complaint.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Create ticket
+      console.log("Submitting ticket with data:", {
+        title,
+        description,
+        category,
+        location,
+        urgency,
+        status: "pending",
+        created_by: user.id,
+      });
+
+      // Create ticket with explicit status
       const { data: ticket, error: ticketError } = await supabase
         .from("tickets")
         .insert({
@@ -87,34 +113,71 @@ const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplain
           category,
           location,
           urgency,
+          status: "pending",
           created_by: user.id,
         })
         .select()
         .single();
 
-      if (ticketError) throw ticketError;
+      if (ticketError) {
+        console.error("Ticket creation error:", ticketError);
+        console.error("Error details:", JSON.stringify(ticketError, null, 2));
+        toast({
+          title: "Database Error",
+          description: `Failed to create ticket: ${ticketError.message}. Code: ${ticketError.code}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Ticket created successfully:", ticket);
 
       // Upload photos if any
       if (photos.length > 0 && ticket) {
+        console.log(`Uploading ${photos.length} photos...`);
         for (const photo of photos) {
           const fileName = `${ticket.id}/${Date.now()}-${photo.name}`;
+          console.log(`Uploading photo: ${fileName}`);
+
           const { error: uploadError } = await supabase.storage
             .from("ticket-attachments")
             .upload(fileName, photo);
 
-          if (uploadError) throw uploadError;
+          if (uploadError) {
+            console.error("Upload error:", uploadError);
+            console.error(
+              "Upload error details:",
+              JSON.stringify(uploadError, null, 2)
+            );
+            // Continue even if upload fails
+            continue;
+          }
 
-          const { data: { publicUrl } } = supabase.storage
+          const {
+            data: { publicUrl },
+          } = supabase.storage
             .from("ticket-attachments")
             .getPublicUrl(fileName);
 
-          await supabase.from("attachments").insert({
-            ticket_id: ticket.id,
-            file_url: publicUrl,
-            file_name: photo.name,
-            file_type: photo.type,
-            uploaded_by: user.id,
-          });
+          console.log(`Photo uploaded, public URL: ${publicUrl}`);
+
+          const { error: attachmentError } = await supabase
+            .from("attachments")
+            .insert({
+              ticket_id: ticket.id,
+              file_url: publicUrl,
+              file_name: photo.name,
+              file_type: photo.type,
+              uploaded_by: user.id,
+            });
+
+          if (attachmentError) {
+            console.error("Attachment insert error:", attachmentError);
+            console.error(
+              "Attachment error details:",
+              JSON.stringify(attachmentError, null, 2)
+            );
+          }
         }
       }
 
@@ -133,9 +196,13 @@ const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplain
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
+      console.error("Full error:", error);
+      console.error("Error stack:", error.stack);
       toast({
         title: "Submission failed",
-        description: error.message,
+        description:
+          error.message ||
+          "An error occurred while submitting your complaint. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -277,7 +344,12 @@ const SubmitComplaintDialog = ({ open, onOpenChange, onSuccess }: SubmitComplain
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="flex-1"
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">

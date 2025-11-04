@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, MapPin, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import TicketDetailDialog from "./TicketDetailDialog";
+import TicketDetailsDialog from "./TicketDetailsDialog";
 import { useState } from "react";
 
 interface TicketListProps {
@@ -14,6 +14,12 @@ interface TicketListProps {
 
 const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+
+  const handleTicketClick = (ticket: any) => {
+    setSelectedTicket(ticket);
+    setShowDetailsDialog(true);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -50,17 +56,21 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
           <Card
             key={ticket.id}
             className="shadow-md hover:shadow-lg transition-all cursor-pointer"
-            onClick={() => setSelectedTicket(ticket)}
+            onClick={() => handleTicketClick(ticket)}
           >
             <CardContent className="p-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-3">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h4 className="font-semibold text-lg mb-1">{ticket.title}</h4>
+                      <h4 className="font-semibold text-lg mb-1">
+                        {ticket.title}
+                      </h4>
                       {role === "staff" && ticket.profiles && (
                         <p className="text-sm text-muted-foreground">
-                          By {ticket.profiles.full_name} • {ticket.profiles.desasiswa} {ticket.profiles.room_number}
+                          By {ticket.profiles.full_name} •{" "}
+                          {ticket.profiles.desasiswa}{" "}
+                          {ticket.profiles.room_number}
                         </p>
                       )}
                     </div>
@@ -69,7 +79,9 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                     </Badge>
                   </div>
 
-                  <p className="text-muted-foreground line-clamp-2">{ticket.description}</p>
+                  <p className="text-muted-foreground line-clamp-2">
+                    {ticket.description}
+                  </p>
 
                   <div className="flex flex-wrap items-center gap-4 text-sm">
                     <div className="flex items-center gap-1 text-muted-foreground">
@@ -78,9 +90,17 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                     </div>
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      <span>{formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}</span>
+                      <span>
+                        {formatDistanceToNow(new Date(ticket.created_at), {
+                          addSuffix: true,
+                        })}
+                      </span>
                     </div>
-                    <div className={`flex items-center gap-1 ${getUrgencyColor(ticket.urgency)}`}>
+                    <div
+                      className={`flex items-center gap-1 ${getUrgencyColor(
+                        ticket.urgency
+                      )}`}
+                    >
                       <AlertCircle className="h-4 w-4" />
                       <span className="capitalize">{ticket.urgency}</span>
                     </div>
@@ -102,15 +122,12 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
         ))}
       </div>
 
-      {selectedTicket && (
-        <TicketDetailDialog
-          ticket={selectedTicket}
-          open={!!selectedTicket}
-          onOpenChange={(open) => !open && setSelectedTicket(null)}
-          onUpdate={onUpdate}
-          role={role}
-        />
-      )}
+      <TicketDetailsDialog
+        ticket={selectedTicket}
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        onUpdate={onUpdate}
+      />
     </>
   );
 };

@@ -8,96 +8,118 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Minimalist light theme with clean whites and subtle grays */
     --background: 0 0% 100%;
-    --foreground: 260 50% 10%;
+    --foreground: 270 50% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 260 50% 10%;
+    --card-foreground: 270 50% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 260 50% 10%;
+    --popover-foreground: 270 50% 15%;
 
-    --primary: 260 60% 25%;
+    /* Primary: Deep Purple (#32004F) */
+    --primary: 285 100% 15.5%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 330 80% 55%;
+    /* Secondary: Vibrant Purple (#7323A8) */
+    --secondary: 279 64% 40%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 260 20% 96%;
-    --muted-foreground: 260 15% 45%;
+    /* Muted: Subtle light grays for minimalist design */
+    --muted: 270 10% 96%;
+    --muted-foreground: 270 10% 40%;
 
-    --accent: 10 85% 65%;
-    --accent-foreground: 260 50% 10%;
+    /* Accent: Hot Pink (#E50085) */
+    --accent: 328 100% 45%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 260 20% 90%;
-    --input: 260 20% 90%;
-    --ring: 260 60% 25%;
+    /* Minimal borders - very subtle */
+    --border: 270 10% 92%;
+    --input: 270 10% 92%;
+    --ring: 285 100% 15.5%;
 
-    --radius: 0.75rem;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(260 60% 25%), hsl(280 60% 35%));
-    --gradient-accent: linear-gradient(135deg, hsl(330 80% 55%), hsl(10 85% 65%));
-    --shadow-card: 0 4px 20px -2px hsl(260 60% 25% / 0.08);
-    --shadow-hover: 0 8px 30px -4px hsl(260 60% 25% / 0.15);
+    /* Reduced radius for minimalist look */
+    --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Subtle gradients */
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(285 100% 15.5%),
+      hsl(279 64% 40%)
+    );
+    --gradient-accent: linear-gradient(
+      135deg,
+      hsl(328 100% 45%),
+      hsl(9 100% 75%)
+    );
+    --shadow-card: 0 1px 3px 0 hsl(270 50% 15% / 0.05);
+    --shadow-hover: 0 4px 12px -2px hsl(285 100% 15.5% / 0.12);
 
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Clean sidebar */
+    --sidebar-background: 0 0% 99%;
+    --sidebar-foreground: 270 50% 15%;
+    --sidebar-primary: 285 100% 15.5%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 270 10% 96%;
+    --sidebar-accent-foreground: 270 50% 15%;
+    --sidebar-border: 270 10% 92%;
+    --sidebar-ring: 279 64% 40%;
   }
 
   .dark {
-    --background: 260 50% 8%;
+    /* Dark mode with Magical Purple Night palette */
+    --background: 270 60% 8%;
     --foreground: 0 0% 98%;
 
-    --card: 260 40% 12%;
+    --card: 270 50% 12%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 260 40% 12%;
+    --popover: 270 50% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 330 80% 55%;
+    /* Primary: Hot Pink (#E50085) for dark mode prominence */
+    --primary: 328 100% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 260 40% 18%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary: Vibrant Purple (#7323A8) */
+    --secondary: 279 64% 40%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 260 40% 18%;
-    --muted-foreground: 260 15% 65%;
+    --muted: 270 40% 16%;
+    --muted-foreground: 270 10% 65%;
 
-    --accent: 10 85% 65%;
-    --accent-foreground: 260 50% 10%;
+    /* Accent: Coral/Peach (#FF5E5B) */
+    --accent: 1 100% 68%;
+    --accent-foreground: 270 50% 10%;
 
     --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 260 40% 20%;
-    --input: 260 40% 20%;
-    --ring: 330 80% 55%;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(260 50% 15%), hsl(280 50% 25%));
-    --gradient-accent: linear-gradient(135deg, hsl(330 80% 55%), hsl(10 85% 65%));
-    --shadow-card: 0 4px 20px -2px hsl(0 0% 0% / 0.3);
-    --shadow-hover: 0 8px 30px -4px hsl(330 80% 55% / 0.4);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 270 40% 18%;
+    --input: 270 40% 18%;
+    --ring: 328 100% 45%;
+
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(285 100% 15.5%),
+      hsl(279 64% 40%)
+    );
+    --gradient-accent: linear-gradient(
+      135deg,
+      hsl(328 100% 45%),
+      hsl(1 100% 68%)
+    );
+    --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.3);
+    --shadow-hover: 0 8px 24px -4px hsl(328 100% 45% / 0.4);
+    --sidebar-background: 285 100% 15.5%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 328 100% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent: 270 40% 20%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
@@ -111,5 +133,24 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+      "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Minimalist utility classes */
+@layer components {
+  .btn-minimal {
+    @apply px-6 py-2.5 rounded-md font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .card-minimal {
+    @apply bg-card border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .text-balance {
+    text-wrap: balance;
   }
 }

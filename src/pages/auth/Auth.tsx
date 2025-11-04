@@ -4,10 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/hostelcare-logo.png";
 
@@ -213,16 +225,25 @@ const Auth = () => {
 
                 <div className="space-y-2">
                   <Label>I am a</Label>
-                  <RadioGroup value={role} onValueChange={(v) => setRole(v as "student" | "staff")}>
+                  <RadioGroup
+                    value={role}
+                    onValueChange={(v) => setRole(v as "student" | "staff")}
+                  >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="student" id="student" />
-                      <Label htmlFor="student" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="student"
+                        className="font-normal cursor-pointer"
+                      >
                         Student
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="staff" id="staff" />
-                      <Label htmlFor="staff" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="staff"
+                        className="font-normal cursor-pointer"
+                      >
                         Staff Member
                       </Label>
                     </div>
@@ -257,12 +278,27 @@ const Auth = () => {
                             <SelectValue placeholder="Select hostel" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Desasiswa A">Desasiswa A</SelectItem>
-                            <SelectItem value="Desasiswa B">Desasiswa B</SelectItem>
-                            <SelectItem value="Desasiswa C">Desasiswa C</SelectItem>
-                            <SelectItem value="Desasiswa D">Desasiswa D</SelectItem>
-                            <SelectItem value="Desasiswa E">Desasiswa E</SelectItem>
-                            <SelectItem value="Desasiswa F">Desasiswa F</SelectItem>
+                            <SelectItem value="Aman Damai">
+                              Aman Damai
+                            </SelectItem>
+                            <SelectItem value="Fajar Harapan">
+                              Fajar Harapan
+                            </SelectItem>
+                            <SelectItem value="Bakti Permai">
+                              Bakti Permai
+                            </SelectItem>
+                            <SelectItem value="Cahaya Gemilang">
+                              Cahaya Gemilang
+                            </SelectItem>
+                            <SelectItem value="Indah Kembara">
+                              Indah Kembara
+                            </SelectItem>
+                            <SelectItem value="Restu">Restu</SelectItem>
+                            <SelectItem value="Saujana">Saujana</SelectItem>
+                            <SelectItem value="Tekun">Tekun</SelectItem>
+                            <SelectItem value="International House">
+                              International House
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -273,7 +309,11 @@ const Auth = () => {
                 {role === "staff" && (
                   <div className="space-y-2">
                     <Label htmlFor="staff-category">Team Category</Label>
-                    <Select value={staffCategory} onValueChange={setStaffCategory} required>
+                    <Select
+                      value={staffCategory}
+                      onValueChange={setStaffCategory}
+                      required
+                    >
                       <SelectTrigger id="staff-category">
                         <SelectValue placeholder="Select your team" />
                       </SelectTrigger>
