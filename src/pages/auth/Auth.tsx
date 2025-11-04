@@ -88,6 +88,19 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Validate contact number: must start with +60 and contain digits only after +
+    const phoneRegex = /^\+60\d{7,14}$/;
+    if (contactNumber && !phoneRegex.test(contactNumber)) {
+      toast({
+        title: "Invalid phone number",
+        description:
+          "Contact number must start with +60 and contain digits only (e.g. +60123456789).",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email: signupEmail,
@@ -334,9 +347,12 @@ const Auth = () => {
                   <Input
                     id="contact"
                     type="tel"
+                    inputMode="tel"
+                    pattern="^\+60[0-9]{7,14}$"
                     placeholder="+60123456789"
                     value={contactNumber}
                     onChange={(e) => setContactNumber(e.target.value)}
+                    required
                   />
                 </div>
 
