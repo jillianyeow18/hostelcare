@@ -154,12 +154,14 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-4 text-center">
-          <img src={logo} alt="HostelCare" className="h-20 mx-auto" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-2 sm:p-4">
+      <Card className="w-full max-w-md shadow-lg mx-auto">
+        <CardHeader className="space-y-3 sm:space-y-4 text-center px-4 sm:px-6">
+          <img src={logo} alt="HostelCare" className="h-16 sm:h-20 mx-auto" />
           <div>
-            <CardTitle className="text-2xl">Welcome to HostelCare</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">
+              Welcome to HostelCare
+            </CardTitle>
             <CardDescription>Your hostel maintenance companion</CardDescription>
           </div>
         </CardHeader>

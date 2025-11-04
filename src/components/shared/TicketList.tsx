@@ -111,16 +111,16 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
             className="shadow-md hover:shadow-lg transition-all cursor-pointer"
             onClick={() => handleTicketClick(ticket)}
           >
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-lg mb-1">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                <div className="flex-1 space-y-2 sm:space-y-3 w-full">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-base sm:text-lg mb-1 break-words">
                         {ticket.title}
                       </h4>
                       {role === "staff" && ticket.profiles && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground break-words">
                           By {ticket.profiles.full_name} •{" "}
                           {ticket.profiles.desasiswa}{" "}
                           {ticket.profiles.room_number}
@@ -136,7 +136,7 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                         disabled={updatingStatus === ticket.id}
                       >
                         <SelectTrigger
-                          className="w-[140px]"
+                          className="w-full sm:w-[140px]"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <SelectValue />
@@ -157,11 +157,11 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                     )}
                   </div>
 
-                  <p className="text-muted-foreground line-clamp-2">
+                  <p className="text-sm sm:text-base text-muted-foreground line-clamp-2">
                     {ticket.description}
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <MapPin className="h-4 w-4" />
                       <span>{ticket.location}</span>

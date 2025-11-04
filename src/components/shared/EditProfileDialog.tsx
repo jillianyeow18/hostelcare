@@ -305,7 +305,12 @@ const EditProfileDialog = ({
                 <Label htmlFor="staff-category">Team Category</Label>
                 <Input
                   id="staff-category"
-                  value={staffCategory ? staffCategory.charAt(0).toUpperCase() + staffCategory.slice(1) : "Not assigned"}
+                  value={
+                    staffCategory
+                      ? staffCategory.charAt(0).toUpperCase() +
+                        staffCategory.slice(1)
+                      : "Not assigned"
+                  }
                   disabled
                   className="bg-muted cursor-not-allowed capitalize"
                 />
