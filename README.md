@@ -36,30 +36,6 @@ EOF
 npm run dev
 ```
 
-### Environment Variables
-
-Create a `.env` file in the root directory with the following content:
-
-```env
-VITE_SUPABASE_PROJECT_ID="zuificprggifetqknxcz"
-VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1aWZpY3ByZ2dpZmV0cWtueGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxODE4NzQsImV4cCI6MjA3Nzc1Nzg3NH0.-G3QvxrqVQqUtFxa4shE0F-MLpOLBTkO2zY3WPMpbjA"
-VITE_SUPABASE_URL="https://zuificprggifetqknxcz.supabase.co"
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
 ## What technologies are used for this project?
 
 This project is built with:
