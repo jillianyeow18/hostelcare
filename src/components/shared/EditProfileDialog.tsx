@@ -144,13 +144,8 @@ const EditProfileDialog = ({
         updateData.student_id = studentId.trim() || null;
         updateData.room_number = roomNumber.trim() || null;
         updateData.desasiswa = desasiswa || null;
-        updateData.staff_category = null;
-      } else {
-        updateData.staff_category = staffCategory || null;
-        updateData.student_id = null;
-        updateData.room_number = null;
-        updateData.desasiswa = null;
       }
+      // Staff category is not editable, so we don't include it in updates
 
       const { error } = await supabase
         .from("profiles")
@@ -308,19 +303,15 @@ const EditProfileDialog = ({
             {role === "staff" && (
               <div className="space-y-2">
                 <Label htmlFor="staff-category">Team Category</Label>
-                <Select value={staffCategory} onValueChange={setStaffCategory}>
-                  <SelectTrigger id="staff-category">
-                    <SelectValue placeholder="Select your team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="plumbing">Plumbing</SelectItem>
-                    <SelectItem value="electrical">Electrical</SelectItem>
-                    <SelectItem value="furniture">Furniture</SelectItem>
-                    <SelectItem value="cleaning">Cleaning</SelectItem>
-                    <SelectItem value="security">Security</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="staff-category"
+                  value={staffCategory ? staffCategory.charAt(0).toUpperCase() + staffCategory.slice(1) : "Not assigned"}
+                  disabled
+                  className="bg-muted cursor-not-allowed capitalize"
+                />
+                <p className="text-xs text-gray-500">
+                  Team category cannot be changed. Contact admin if needed.
+                </p>
               </div>
             )}
 
