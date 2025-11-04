@@ -24,8 +24,26 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Create a .env file in the root directory with your Supabase credentials.
+# Copy and paste the following content into the .env file:
+cat > .env << 'EOF'
+VITE_SUPABASE_PROJECT_ID="zuificprggifetqknxcz"
+VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1aWZpY3ByZ2dpZmV0cWtueGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxODE4NzQsImV4cCI6MjA3Nzc1Nzg3NH0.-G3QvxrqVQqUtFxa4shE0F-MLpOLBTkO2zY3WPMpbjA"
+VITE_SUPABASE_URL="https://zuificprggifetqknxcz.supabase.co"
+EOF
+
+# Step 5: Start the development server with auto-reloading and an instant preview.
 npm run dev
+```
+
+### Environment Variables
+
+Create a `.env` file in the root directory with the following content:
+
+```env
+VITE_SUPABASE_PROJECT_ID="zuificprggifetqknxcz"
+VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1aWZpY3ByZ2dpZmV0cWtueGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxODE4NzQsImV4cCI6MjA3Nzc1Nzg3NH0.-G3QvxrqVQqUtFxa4shE0F-MLpOLBTkO2zY3WPMpbjA"
+VITE_SUPABASE_URL="https://zuificprggifetqknxcz.supabase.co"
 ```
 
 **Edit a file directly in GitHub**
