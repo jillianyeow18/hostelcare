@@ -18,7 +18,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, MapPin, AlertCircle, Calendar, Image as ImageIcon, MessageSquare } from "lucide-react";
+import {
+  Clock,
+  MapPin,
+  AlertCircle,
+  Calendar,
+  Image as ImageIcon,
+  MessageSquare,
+} from "lucide-react";
 import { format } from "date-fns";
 
 interface TicketDetailDialogProps {
@@ -29,7 +36,13 @@ interface TicketDetailDialogProps {
   role: "student" | "staff";
 }
 
-const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: TicketDetailDialogProps) => {
+const TicketDetailDialog = ({
+  ticket,
+  open,
+  onOpenChange,
+  onUpdate,
+  role,
+}: TicketDetailDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(ticket.status);
@@ -47,21 +60,51 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
   }, [open, ticket.id]);
 
   const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     setCurrentUserId(user?.id || null);
   };
 
   const loadComments = async () => {
-    const { data } = await supabase
+    const { data: commentsData, error: commentsError } = await supabase
       .from("comments")
-      .select(`
-        *,
-        profiles:author_id (full_name, role)
-      `)
+      .select("*")
       .eq("ticket_id", ticket.id)
       .order("created_at", { ascending: true });
 
-    setComments(data || []);
+    if (commentsError) {
+      console.error("Error loading comments:", commentsError);
+      setComments([]);
+      return;
+    }
+
+    const arr = commentsData || [];
+    if (arr.length === 0) {
+      setComments([]);
+      return;
+    }
+
+    const userIds = [
+      ...new Set(arr.map((c) => (c as any).created_by).filter(Boolean)),
+    ];
+
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, full_name, role")
+      .in("id", userIds);
+
+    if (profilesError) {
+      console.error("Error loading profiles:", profilesError);
+    }
+
+    const merged = arr.map((comment) => ({
+      ...comment,
+      profiles:
+        profilesData?.find((p) => p.id === (comment as any).created_by) || null,
+    }));
+
+    setComments(merged);
   };
 
   const loadAttachments = async () => {
@@ -78,9 +121,9 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
     try {
       const { error } = await supabase
         .from("tickets")
-        .update({ 
+        .update({
           status,
-          resolved_at: status === "resolved" ? new Date().toISOString() : null
+          resolved_at: status === "resolved" ? new Date().toISOString() : null,
         })
         .eq("id", ticket.id);
 
@@ -109,14 +152,16 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const { error } = await supabase.from("comments").insert({
         ticket_id: ticket.id,
-        author_id: user.id,
         content: comment,
         is_internal: role === "staff",
+        created_by: user.id,
       });
 
       if (error) throw error;
@@ -142,14 +187,16 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
   const handleAssignToSelf = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const { error } = await supabase
         .from("tickets")
-        .update({ 
+        .update({
           assigned_to: user.id,
-          status: ticket.status === "pending" ? "assigned" : ticket.status
+          status: ticket.status === "pending" ? "assigned" : ticket.status,
         })
         .eq("id", ticket.id);
 
@@ -194,8 +241,12 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
         <DialogHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <DialogTitle className="text-2xl mb-2">{ticket.title}</DialogTitle>
-              <DialogDescription>Ticket #{ticket.id.slice(0, 8)}</DialogDescription>
+              <DialogTitle className="text-2xl mb-2">
+                {ticket.title}
+              </DialogTitle>
+              <DialogDescription>
+                Ticket #{ticket.id.slice(0, 8)}
+              </DialogDescription>
             </div>
             <Badge className={getStatusColor(ticket.status)}>
               {ticket.status.replace("_", " ")}
@@ -265,11 +316,11 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
           {role === "staff" && (
             <div className="space-y-3 pt-4 border-t">
               <h4 className="font-semibold">Staff Actions</h4>
-              
+
               {/* Assign to Self */}
               {!ticket.assigned_to || ticket.assigned_to !== currentUserId ? (
-                <Button 
-                  onClick={handleAssignToSelf} 
+                <Button
+                  onClick={handleAssignToSelf}
                   disabled={loading}
                   variant="outline"
                   className="w-full"
@@ -295,7 +346,10 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
                     <SelectItem value="resolved">Resolved</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={handleStatusUpdate} disabled={loading || status === ticket.status}>
+                <Button
+                  onClick={handleStatusUpdate}
+                  disabled={loading || status === ticket.status}
+                >
                   Update Status
                 </Button>
               </div>
@@ -326,7 +380,9 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
                         {format(new Date(comment.created_at), "PPp")}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground">{comment.content}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {comment.content}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -340,7 +396,11 @@ const TicketDetailDialog = ({ ticket, open, onOpenChange, onUpdate, role }: Tick
                   onChange={(e) => setComment(e.target.value)}
                   rows={3}
                 />
-                <Button onClick={handleAddComment} disabled={loading || !comment.trim()} size="sm">
+                <Button
+                  onClick={handleAddComment}
+                  disabled={loading || !comment.trim()}
+                  size="sm"
+                >
                   Post Comment
                 </Button>
               </div>

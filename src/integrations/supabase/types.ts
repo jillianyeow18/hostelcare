@@ -61,7 +61,7 @@ export type Database = {
       };
       comments: {
         Row: {
-          author_id: string;
+          created_by: string;
           content: string;
           created_at: string;
           id: string;
@@ -69,7 +69,7 @@ export type Database = {
           ticket_id: string;
         };
         Insert: {
-          author_id: string;
+          created_by: string;
           content: string;
           created_at?: string;
           id?: string;
@@ -77,7 +77,7 @@ export type Database = {
           ticket_id: string;
         };
         Update: {
-          author_id?: string;
+          created_by?: string;
           content?: string;
           created_at?: string;
           id?: string;
@@ -86,8 +86,8 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "comments_author_id_fkey";
-            columns: ["author_id"];
+            foreignKeyName: "comments_created_by_fkey";
+            columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
