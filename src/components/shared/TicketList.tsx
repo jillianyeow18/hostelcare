@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, AlertCircle } from "lucide-react";
+import { Clock, MapPin, AlertCircle, Eye, Pencil } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import TicketDetailsDialog from "./TicketDetailsDialog";
 import { useState } from "react";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import EditComplaintDialog from "../student/EditComplaintDialog";
 
 interface TicketListProps {
   tickets: any[];
@@ -24,12 +25,19 @@ interface TicketListProps {
 const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleTicketClick = (ticket: any) => {
     setSelectedTicket(ticket);
     setShowDetailsDialog(true);
+  };
+
+  const handleEditClick = (ticket: any, e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent card click from opening details
+    setSelectedTicket(ticket);
+    setShowEditDialog(true);
   };
 
   const handleStatusChange = async (
@@ -108,11 +116,11 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
         {tickets.map((ticket) => (
           <Card
             key={ticket.id}
-            className="shadow-md hover:shadow-lg transition-all cursor-pointer"
+            className="shadow-md hover:shadow-lg transition-all cursor-pointer relative"
             onClick={() => handleTicketClick(ticket)}
           >
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+            <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 flex-grow">
                 <div className="flex-1 space-y-2 sm:space-y-3 w-full">
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
@@ -144,9 +152,7 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                         <SelectContent>
                           <SelectItem value="pending">Pending</SelectItem>
                           <SelectItem value="assigned">Assigned</SelectItem>
-                          <SelectItem value="in_progress">
-                            In Progress
-                          </SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
                           <SelectItem value="resolved">Resolved</SelectItem>
                         </SelectContent>
                       </Select>
@@ -191,20 +197,51 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                   </div>
                 </div>
 
-                <Button variant="outline" size="sm">
-                  View Details
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTicketClick(ticket);
+                  }}
+                >
+                  <Eye className="mr-2 h-4 w-4" /> View Details
                 </Button>
               </div>
+
+              {/* Edit Complaint button — visible only for student + pending */}
+              {role === "student" && ticket.status === "pending" && (
+                <div className="flex justify-end mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
+                    onClick={(e) => handleEditClick(ticket, e)}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" /> Edit Complaint
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Ticket Details Dialog */}
       <TicketDetailsDialog
         ticket={selectedTicket}
         open={showDetailsDialog}
         onOpenChange={setShowDetailsDialog}
         onUpdate={onUpdate}
+      />
+
+      {/* Edit Complaint Dialog */}
+      <EditComplaintDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        onSuccess={onUpdate}
+        ticketId={selectedTicket?.id ?? null}
       />
     </>
   );
