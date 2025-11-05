@@ -137,6 +137,7 @@ const SubmitComplaintDialog = ({
         urgency,
         status: "pending",
         created_by: user.id,
+        desasiswa: profile?.desasiswa,
       });
 
       // Create ticket with explicit status
@@ -150,6 +151,7 @@ const SubmitComplaintDialog = ({
           urgency,
           status: "pending",
           created_by: user.id,
+          desasiswa: profile?.desasiswa,
         })
         .select()
         .single();
