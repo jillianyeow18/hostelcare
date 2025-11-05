@@ -132,13 +132,13 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 select-none">
       {/* Header */}
       <header className="border-b bg-white shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <img src={logo} alt="HostelCare" className="h-10 sm:h-12" />
+            <div className="flex items-center gap-2 sm:gap-10">
+              <img src={logo} alt="HostelCare" className="h-12 sm:h-15" />
               <div>
                 <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#32004F] to-[#7323A8] bg-clip-text text-transparent">
                   HostelCare
@@ -174,7 +174,7 @@ const Dashboard = () => {
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Welcome Section */}
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-6 sm:mb-8 select-none">
           <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#32004F] to-[#7323A8] bg-clip-text text-transparent mb-2">
             Welcome back, {profile?.full_name}!
           </h2>
@@ -187,7 +187,7 @@ const Dashboard = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-            <CardContent className="p-6">
+            <CardContent className="p-6 flex items-start gap-8 select-none">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-gradient-to-br from-[#E50085]/10 to-[#E50085]/20 rounded-lg">
                   <Clock className="h-6 w-6 text-[#E50085]" />
@@ -203,7 +203,7 @@ const Dashboard = () => {
           </Card>
 
           <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-            <CardContent className="p-6">
+            <CardContent className="p-6 flex items-start gap-8 select-none">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-gradient-to-br from-[#FFAC93]/30 to-[#FFAC93]/50 rounded-lg">
                   <CheckCircle2 className="h-6 w-6 text-[#32004F]" />
@@ -219,7 +219,7 @@ const Dashboard = () => {
           </Card>
 
           <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-            <CardContent className="p-6">
+            <CardContent className="p-6 flex items-start gap-8 select-none">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-gradient-to-br from-[#7323A8]/10 to-[#7323A8]/20 rounded-lg">
                   <Ticket className="h-6 w-6 text-[#7323A8]" />
@@ -238,7 +238,7 @@ const Dashboard = () => {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* My Tickets Section - Takes 2 columns */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 select-none">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-semibold text-[#32004F]">
                 My Tickets
@@ -290,7 +290,7 @@ const Dashboard = () => {
 
           {/* FAQ Section - Takes 1 column */}
           <div>
-            <Card className="bg-white border-0 shadow-sm">
+            <Card className="bg-white border-0 shadow-sm select-none mt-[50px]">
               <CardHeader className="border-b pb-4">
                 <CardTitle className="text-lg font-semibold text-[#32004F] flex items-center gap-2">
                   <HelpCircle className="h-5 w-5 text-[#7323A8]" />
@@ -298,7 +298,7 @@ const Dashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                <div className="space-y-4 max-h-[600px] overflow-y-auto overflow-x-hidden">
                   {faqs.map((faq, index) => (
                     <div
                       key={index}
