@@ -14,6 +14,118 @@ export type Database = {
   };
   public: {
     Tables: {
+      channels: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          staff_category: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          staff_category: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          staff_category?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      channel_members: {
+        Row: {
+          channel_id: string;
+          id: string;
+          joined_at: string;
+          user_id: string;
+        };
+        Insert: {
+          channel_id: string;
+          id?: string;
+          joined_at?: string;
+          user_id: string;
+        };
+        Update: {
+          channel_id?: string;
+          id?: string;
+          joined_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "channel_members_channel_id_fkey";
+            columns: ["channel_id"];
+            isOneToOne: false;
+            referencedRelation: "channels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "channel_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      messages: {
+        Row: {
+          channel_id: string;
+          content: string;
+          created_at: string;
+          id: string;
+          sender_id: string | null;
+          ticket_id: string | null;
+          type: "user" | "bot" | "announcement";
+        };
+        Insert: {
+          channel_id: string;
+          content: string;
+          created_at?: string;
+          id?: string;
+          sender_id?: string | null;
+          ticket_id?: string | null;
+          type?: "user" | "bot" | "announcement";
+        };
+        Update: {
+          channel_id?: string;
+          content?: string;
+          created_at?: string;
+          id?: string;
+          sender_id?: string | null;
+          ticket_id?: string | null;
+          type?: "user" | "bot" | "announcement";
+        };
+        Relationships: [
+          {
+            foreignKeyName: "messages_channel_id_fkey";
+            columns: ["channel_id"];
+            isOneToOne: false;
+            referencedRelation: "channels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey";
+            columns: ["sender_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_ticket_id_fkey";
+            columns: ["ticket_id"];
+            isOneToOne: false;
+            referencedRelation: "tickets";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       attachments: {
         Row: {
           created_at: string;
@@ -58,6 +170,7 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
+        
       };
       comments: {
         Row: {
@@ -203,6 +316,101 @@ export type Database = {
           }
         ];
       };
+      ticket_feedback: {
+        Row: {
+          created_at: string;
+          feedback: string | null;
+          id: string;
+          rating: number;
+          ticket_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          feedback?: string | null;
+          id?: string;
+          rating: number;
+          ticket_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          feedback?: string | null;
+          id?: string;
+          rating?: number;
+          ticket_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ticket_feedback_ticket_id_fkey";
+            columns: ["ticket_id"];
+            isOneToOne: false;
+            referencedRelation: "tickets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ticket_feedback_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      notifications: {
+  Row: {
+    id: string;
+    channel_id: string;
+    user_id: string;
+    message_id: string | null;
+    seen: boolean;
+    created_at: string;
+  };
+  Insert: {
+    id?: string;
+    channel_id: string;
+    user_id: string;
+    message_id?: string | null;
+    seen?: boolean;
+    created_at?: string;
+  };
+  Update: {
+    id?: string;
+    channel_id?: string;
+    user_id?: string;
+    message_id?: string | null;
+    seen?: boolean;
+    created_at?: string;
+  };
+  Relationships: [
+    {
+      foreignKeyName: "notifications_channel_id_fkey";
+      columns: ["channel_id"];
+      isOneToOne: false;
+      referencedRelation: "channels";
+      referencedColumns: ["id"];
+    },
+    {
+      foreignKeyName: "notifications_user_id_fkey";
+      columns: ["user_id"];
+      isOneToOne: false;
+      referencedRelation: "profiles";
+      referencedColumns: ["id"];
+    },
+    {
+      foreignKeyName: "notifications_message_id_fkey";
+      columns: ["message_id"];
+      isOneToOne: false;
+      referencedRelation: "messages";
+      referencedColumns: ["id"];
+    }
+  ];
+};
+
       user_roles: {
         Row: {
           created_at: string | null;
@@ -248,6 +456,7 @@ export type Database = {
       [_ in never]: never;
     };
   };
+  
 };
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;

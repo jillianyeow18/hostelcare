@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { MessageSquare, Send, User } from "lucide-react";
+import { MessageSquare, Send, User, Star, ThumbsUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -41,6 +41,14 @@ const TicketDetailsDialog = ({
   const [submitting, setSubmitting] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  
+  // Rating and feedback states
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [existingFeedback, setExistingFeedback] = useState<any>(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
 
   useEffect(() => {
     if (open && ticket) {
@@ -48,6 +56,13 @@ const TicketDetailsDialog = ({
       loadUserRole();
     }
   }, [open, ticket]);
+
+  // Load feedback when ticket is resolved and userRole is determined
+  useEffect(() => {
+    if (open && ticket && ticket.status === "resolved" && userRole) {
+      loadFeedback();
+    }
+  }, [open, ticket, ticket?.status, userRole]);
 
   const loadUserRole = async () => {
     const {
@@ -62,6 +77,44 @@ const TicketDetailsDialog = ({
       .single();
 
     setUserRole(profile?.role || null);
+  };
+
+  const loadFeedback = async () => {
+    setLoadingFeedback(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      let query = supabase
+        .from("ticket_feedback")
+        .select("*, profiles(full_name, role)")
+        .eq("ticket_id", ticket.id);
+
+      // For students, only load their own feedback
+      // For staff, load any feedback for this ticket
+      if (userRole === "student") {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error && error.code !== "PGRST116") {
+        throw error;
+      }
+
+      setExistingFeedback(data);
+    } catch (error: any) {
+      console.error("Error loading feedback:", error);
+      toast({
+        title: "Error loading feedback",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingFeedback(false);
+    }
   };
 
   const loadComments = async () => {
@@ -155,6 +208,57 @@ const TicketDetailsDialog = ({
     }
   };
 
+  const handleSubmitFeedback = async () => {
+    if (rating === 0) {
+      toast({
+        title: "Rating required",
+        description: "Please select a rating before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmittingFeedback(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase.from("ticket_feedback").insert({
+        ticket_id: ticket.id,
+        user_id: user.id,
+        rating: rating,
+        feedback: feedback.trim() || null,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Feedback submitted",
+        description: "Thank you for your feedback!",
+      });
+
+      // Reload feedback to show the submitted one
+      await loadFeedback();
+      
+      // Reset form
+      setRating(0);
+      setFeedback("");
+      
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error submitting feedback:", error);
+      toast({
+        title: "Failed to submit feedback",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       pending: {
@@ -217,6 +321,11 @@ const TicketDetailsDialog = ({
       });
 
       onUpdate(); // Refresh the ticket data
+      
+      // If changed to resolved, load feedback section
+      if (newStatus === "resolved") {
+        loadFeedback();
+      }
     } catch (error: any) {
       toast({
         title: "Failed to update status",
@@ -226,6 +335,195 @@ const TicketDetailsDialog = ({
     } finally {
       setUpdatingStatus(false);
     }
+  };
+
+  const renderStars = (isInteractive: boolean = true, displayRating?: number) => {
+    const ratingToUse = displayRating !== undefined ? displayRating : rating;
+    
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            disabled={!isInteractive}
+            onClick={() => isInteractive && setRating(star)}
+            onMouseEnter={() => isInteractive && setHoveredRating(star)}
+            onMouseLeave={() => isInteractive && setHoveredRating(0)}
+            className={`transition-all ${
+              isInteractive ? "cursor-pointer hover:scale-110" : "cursor-default"
+            }`}
+          >
+            <Star
+              className={`h-8 w-8 ${
+                star <= (isInteractive ? (hoveredRating || ratingToUse) : ratingToUse)
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "text-gray-300"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  const renderFeedbackSection = () => {
+    // Only show for resolved tickets
+    if (ticket?.status !== "resolved") return null;
+
+    // Don't show anything if user role not loaded yet
+    if (!userRole) return null;
+
+    // For staff: only show if feedback exists (read-only view)
+    if (userRole === "staff") {
+      if (!existingFeedback && !loadingFeedback) return null;
+      
+      return (
+        <div className="border-t pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ThumbsUp className="h-5 w-5 text-[#7323A8]" />
+            <h3 className="font-semibold text-[#32004F]">Student Feedback</h3>
+          </div>
+
+          {loadingFeedback ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Loading feedback...</p>
+            </div>
+          ) : existingFeedback ? (
+            <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg p-6 border-2 border-green-200">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Rating</p>
+                  {renderStars(false, existingFeedback.rating)}
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 mb-1">
+                    Submitted by: {existingFeedback.profiles?.full_name || "Unknown"}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatDistanceToNow(new Date(existingFeedback.created_at), {
+                      addSuffix: true,
+                    })}
+                  </p>
+                </div>
+              </div>
+              
+              {existingFeedback.feedback && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Feedback</p>
+                  <p className="text-gray-700 whitespace-pre-wrap bg-white p-4 rounded-md">
+                    {existingFeedback.feedback}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    // For students: show form or their submitted feedback
+    if (userRole === "student") {
+      return (
+        <div className="border-t pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ThumbsUp className="h-5 w-5 text-[#7323A8]" />
+            <h3 className="font-semibold text-[#32004F]">Resolution Feedback</h3>
+          </div>
+
+          {loadingFeedback ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Loading feedback...</p>
+            </div>
+          ) : existingFeedback ? (
+            // Display existing feedback (read-only)
+            <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg p-6 border-2 border-green-200">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Your Rating</p>
+                  {renderStars(false, existingFeedback.rating)}
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">
+                    Submitted{" "}
+                    {formatDistanceToNow(new Date(existingFeedback.created_at), {
+                      addSuffix: true,
+                    })}
+                  </p>
+                </div>
+              </div>
+              
+              {existingFeedback.feedback && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Your Feedback</p>
+                  <p className="text-gray-700 whitespace-pre-wrap bg-white p-4 rounded-md">
+                    {existingFeedback.feedback}
+                  </p>
+                </div>
+              )}
+              
+              <div className="mt-4 flex items-center gap-2 text-green-600">
+                <ThumbsUp className="h-4 w-4" />
+                <span className="text-sm font-medium">Thank you for your feedback!</span>
+              </div>
+            </div>
+          ) : (
+            // Feedback submission form (one-time only)
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 border-2 border-purple-200">
+              <p className="text-gray-700 mb-4">
+                This ticket has been resolved. Please rate your experience and provide feedback to help us improve our service.
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#32004F] mb-2">
+                    How satisfied are you with the resolution? *
+                  </label>
+                  {renderStars(true)}
+                  {rating > 0 && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {rating === 1 && "Very Dissatisfied"}
+                      {rating === 2 && "Dissatisfied"}
+                      {rating === 3 && "Neutral"}
+                      {rating === 4 && "Satisfied"}
+                      {rating === 5 && "Very Satisfied"}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="feedback-text"
+                    className="block text-sm font-medium text-[#32004F] mb-2"
+                  >
+                    Additional Comments (Optional)
+                  </label>
+                  <Textarea
+                    id="feedback-text"
+                    placeholder="Share your experience, suggestions, or any additional thoughts..."
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    rows={4}
+                    className="border-purple-200 focus:border-[#7323A8] focus:ring-[#7323A8]"
+                  />
+                </div>
+
+                <Button
+                  onClick={handleSubmitFeedback}
+                  disabled={submittingFeedback || rating === 0}
+                  className="bg-gradient-to-r from-[#7323A8] to-[#E50085] hover:from-[#32004F] hover:to-[#7323A8] text-white w-full"
+                >
+                  <ThumbsUp className="h-4 w-4 mr-2" />
+                  {submittingFeedback ? "Submitting..." : "Submit Feedback"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -378,6 +676,9 @@ const TicketDetailsDialog = ({
               </Button>
             </div>
           </div>
+
+          {/* Rating and Feedback Section - Only shown when resolved */}
+          {renderFeedbackSection()}
         </div>
       </DialogContent>
     </Dialog>
