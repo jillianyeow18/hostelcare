@@ -232,7 +232,7 @@ const Dashboard = () => {
       // @ts-expect-error deep type inference issue
       const { data, error } = await supabase
         .from("tickets")
-        .select("id, title, description, category, location, urgency, status, created_at, updated_at")
+        .select("*")
         .eq("desasiswa", profile.desasiswa)
         .order("created_at", { ascending: false });
 
@@ -338,17 +338,6 @@ const Dashboard = () => {
                   <CardTitle className="text-lg font-semibold text-[#32004F]">
                     Tickets Overview
                   </CardTitle>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-32 border-purple-200">
-                      <SelectValue placeholder="Filter" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
@@ -425,11 +414,10 @@ const Dashboard = () => {
                       data={pieData}
                       dataKey="value"
                       nameKey="name"
-                      innerRadius={40}
+                      innerRadius={1}
                       outerRadius={80}
                       cy="40%"
                       label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, fill }) => {
-                      // Calculate position for the label (same logic as recharts default label)
                         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
                         const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
                         const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
@@ -438,10 +426,9 @@ const Dashboard = () => {
                           <text 
                             x={x} 
                             y={y} 
-                            fill="white" // Ensure good contrast
+                            fill="white" 
                             textAnchor={x > cx ? 'start' : 'end'} 
                             dominantBaseline="central"
-                            // 2. ADJUST FONT SIZE HERE
                             fontSize="12px" 
                             fontWeight="bold"
                           >
