@@ -24,6 +24,7 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
+<<<<<<< HEAD
 # Step 4: Create a .env file in the root directory with your Supabase credentials.
 # Copy and paste the following content into the .env file:
 cat > .env << 'EOF'
@@ -36,6 +37,26 @@ EOF
 npm run dev
 ```
 
+=======
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+```
+
+**Edit a file directly in GitHub**
+
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
+
+**Use GitHub Codespaces**
+
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+>>>>>>> 5853cb6a0ee7aa8568be39a94ebd8a9bcced3c53
 ## What technologies are used for this project?
 
 This project is built with:

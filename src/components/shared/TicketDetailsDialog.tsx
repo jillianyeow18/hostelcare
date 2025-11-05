@@ -78,7 +78,11 @@ const TicketDetailsDialog = ({
 
       // Then get profile info for each comment creator
       if (commentsData && commentsData.length > 0) {
-        const userIds = [...new Set(commentsData.map((c) => c.author_id))];
+        const userIds = [
+          ...new Set(
+            commentsData.map((c) => (c as any).created_by).filter(Boolean)
+          ),
+        ];
         const { data: profilesData, error: profilesError } = await supabase
           .from("profiles")
           .select("id, full_name, role")
@@ -92,7 +96,8 @@ const TicketDetailsDialog = ({
         const commentsWithProfiles = commentsData.map((comment) => ({
           ...comment,
           profiles:
-            profilesData?.find((p) => p.id === comment.author_id) || null,
+            profilesData?.find((p) => p.id === (comment as any).created_by) ||
+            null,
         }));
 
         setComments(commentsWithProfiles);
@@ -125,7 +130,7 @@ const TicketDetailsDialog = ({
       const { error } = await supabase.from("comments").insert({
         ticket_id: ticket.id,
         content: newComment.trim(),
-        author_id: user.id,
+        created_by: user.id,
       });
 
       if (error) throw error;

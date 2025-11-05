@@ -22,6 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+<<<<<<< HEAD
 
 # Environment
 .env
@@ -31,3 +32,5 @@ supabase/.temp/
 
 # Lock files (using npm)
 bun.lockb
+=======
+>>>>>>> 5853cb6a0ee7aa8568be39a94ebd8a9bcced3c53
