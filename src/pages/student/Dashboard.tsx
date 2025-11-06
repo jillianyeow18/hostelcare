@@ -192,11 +192,6 @@ const Dashboard = () => {
       answer:
         "Once submitted, complaints cannot be edited to maintain record integrity. However, you can add comments or additional information through the ticket details page. If you need to make significant changes, please contact the maintenance office.",
     },
-    {
-      question: "How will I know when my issue is resolved?",
-      answer:
-        "You'll receive notifications when your ticket status changes. Once marked as resolved, you'll be notified and can view the resolution details in your ticket history.",
-    },
   ];
 
   // ------------------ Load Tickets ------------------
@@ -208,7 +203,14 @@ const Dashboard = () => {
 
       const { data, error } = await supabase
         .from("tickets")
-        .select("*")
+         .select(`
+            *,
+            attachments:attachments (
+              id,
+              file_url,
+              file_name
+            )
+          `)
         .eq("created_by", user.id)
         .order("created_at", { ascending: false });
 
@@ -232,9 +234,21 @@ const Dashboard = () => {
       // @ts-expect-error deep type inference issue
       const { data, error } = await supabase
         .from("tickets")
-        .select("*")
+        .select(`
+          *,
+          attachments:attachments (
+            id,
+            file_url,
+            file_name
+          )
+        `)
         .eq("desasiswa", profile.desasiswa)
         .order("created_at", { ascending: false });
+
+if (error) console.error(error);
+console.log(data); // each ticket now has `attachments` array
+
+
 
       if (error) throw error;
       setDesaTickets((data ?? []) as Ticket[]);
@@ -396,9 +410,9 @@ const Dashboard = () => {
               </Card>
 
             {/* Pie Chart */}
-            <Card className="bg-white border-0 shadow-sm">
+            <Card className=" fill white bg-gradient-to-r from-[#7323A8] to-[#E50085] hover:from-[#32004F] hover:to-[#7323A8] text-white transition-all">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-[#32004F]">
+                <CardTitle className= "text-lg font-semibold text-white">
                   Category Distribution
                 </CardTitle>
               </CardHeader>

@@ -41,6 +41,7 @@ const TicketDetailsDialog = ({
   const [submitting, setSubmitting] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [localStatus, setLocalStatus] = useState(ticket?.status);
   
   // Rating and feedback states
   const [rating, setRating] = useState(0);
@@ -54,6 +55,7 @@ const TicketDetailsDialog = ({
     if (open && ticket) {
       loadComments();
       loadUserRole();
+      setLocalStatus(ticket?.status);
     }
   }, [open, ticket]);
 
@@ -297,7 +299,7 @@ const TicketDetailsDialog = ({
 
   const handleStatusChange = async (newStatus: string) => {
     setUpdatingStatus(true);
-
+    setLocalStatus(newStatus);
     try {
       const updateData: any = {
         status: newStatus,
@@ -526,6 +528,9 @@ const TicketDetailsDialog = ({
     return null;
   };
 
+  if (!ticket) {
+}
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -545,7 +550,7 @@ const TicketDetailsDialog = ({
               <p className="text-sm text-gray-600 mb-2">Status</p>
               {userRole === "staff" ? (
                 <Select
-                  value={ticket?.status}
+                  value={localStatus}
                   onValueChange={handleStatusChange}
                   disabled={updatingStatus}
                 >
@@ -553,10 +558,10 @@ const TicketDetailsDialog = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="assigned">Assigned</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="pending"disabled={ticket.status === "in_progress" ||ticket.status === "resolved" } > Pending </SelectItem>
+                    <SelectItem value="assigned" disabled={ ticket.status === "in_progress" || ticket.status === "resolved"  } > Assigned </SelectItem>
+                    <SelectItem value="in_progress" disabled={ ticket.status === "resolved" || ticket.status === "pending" }>In Progress </SelectItem>
+                    <SelectItem value="resolved" disabled={ ticket.status === "pending" || ticket.status === "assigned" }>Resolved</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
@@ -579,6 +584,19 @@ const TicketDetailsDialog = ({
                     addSuffix: true,
                   })}
               </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Attachment</p>
+                {ticket?.attachments?.length > 0 ? (
+                  <img
+                    src={ticket.attachments[0].file_url}
+                    alt={ticket.attachments[0].file_name}
+                    className="max-w-full h-auto mt-2 rounded shadow"
+                  />
+                ) : (
+                  <p className="text-gray-400">No attachment</p>
+                )}
+
             </div>
           </div>
 

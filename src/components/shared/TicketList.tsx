@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, MapPin, AlertCircle, Eye, Pencil } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import TicketDetailsDialog from "./TicketDetailsDialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -27,7 +27,18 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // ✅ Load current user's ID when component mounts
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      console.log("Current user:", data?.user);
+      setCurrentUserId(data?.user?.id || null);
+    };
+    fetchUser();
+  }, []);
 
   const handleTicketClick = (ticket: any) => {
     setSelectedTicket(ticket);
@@ -45,15 +56,54 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
     newStatus: string,
     e: Event
   ) => {
-    e.stopPropagation(); // Prevent card click from opening dialog
+    e.stopPropagation();
     setUpdatingStatus(ticketId);
 
     try {
-      const updateData: any = {
-        status: newStatus,
-      };
+      // ✅ Check if already assigned
+      const { data: existingTicket, error: fetchError } = await supabase
+        .from("tickets")
+        .select("status, assigned_to")
+        .eq("id", ticketId)
+        .single();
 
-      // If status is being set to resolved, add resolved_at timestamp
+      if (fetchError) throw fetchError;
+
+      if (
+        existingTicket?.status === "assigned" &&
+        existingTicket?.assigned_to &&
+        newStatus === "assigned" &&
+        existingTicket.assigned_to !== currentUserId
+      ) {
+        toast({
+          title: "Ticket already assigned",
+          description: "Another staff member has already taken this ticket.",
+          variant: "destructive",
+        });
+        setUpdatingStatus(null);
+        return;
+      }
+
+      const updateData: any = { status: newStatus };
+
+      if (newStatus === "assigned") {
+        updateData.assigned_to = currentUserId;
+      }
+
+      if (newStatus === "resolved") {
+        updateData.resolved_at = new Date().toISOString();
+        updateData.is_escalated = false;
+      }
+
+      if (existingTicket?.status === "assigned" && newStatus === "pending") {
+        updateData.assigned_to = null;
+      }
+
+      if (newStatus === "assigned") {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user?.id) updateData.assigned_to = userData.user.id;
+      }
+
       if (newStatus === "resolved") {
         updateData.resolved_at = new Date().toISOString();
       }
@@ -70,7 +120,7 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
         description: `Ticket status changed to ${newStatus.replace("_", " ")}`,
       });
 
-      onUpdate(); // Refresh the ticket list
+      onUpdate();
     } catch (error: any) {
       toast({
         title: "Failed to update status",
@@ -135,13 +185,18 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                         </p>
                       )}
                     </div>
+ 
                     {role === "staff" ? (
                       <Select
                         value={ticket.status}
                         onValueChange={(value) =>
                           handleStatusChange(ticket.id, value, event as any)
                         }
-                        disabled={updatingStatus === ticket.id}
+                        disabled={
+                          updatingStatus === ticket.id ||
+                          (ticket.status === "assigned" && ticket.assigned_to !== currentUserId) ||
+                          ticket.status === "resolved"
+                        }
                       >
                         <SelectTrigger
                           className="w-full sm:w-[140px]"
@@ -149,18 +204,32 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                         >
                           <SelectValue />
                         </SelectTrigger>
+
                         <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="assigned">Assigned</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="resolved">Resolved</SelectItem>
+                          <SelectItem value="pending"disabled={ticket.status === "in_progress" ||ticket.status === "resolved" } > Pending </SelectItem>
+                          <SelectItem value="assigned" disabled={ ticket.status === "in_progress" || ticket.status === "resolved"  } > Assigned </SelectItem>
+                          <SelectItem value="in_progress" disabled={ ticket.status === "resolved" || ticket.status === "pending" }>In Progress </SelectItem>
+                          <SelectItem value="resolved" disabled={ ticket.status === "pending" || ticket.status === "assigned" }>Resolved</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge className={getStatusColor(ticket.status)}>
+                      <Badge  className={`${getStatusColor(ticket.status)} px-3 py-1 text-sm`}>
                         {ticket.status.replace("_", " ")}
                       </Badge>
                     )}
+                    
+                  <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTicketClick(ticket);
+                  }}
+                >
+                  <Eye className="mr-2 h-4 w-4" /> View Details
+                </Button>
+
                   </div>
 
                   <p className="text-sm sm:text-base text-muted-foreground line-clamp-2">
@@ -190,39 +259,36 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center justify-between">
+                    {/* Left side: Category */}
                     <Badge variant="outline" className="capitalize">
                       {ticket.category}
                     </Badge>
-                  </div>
-                </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleTicketClick(ticket);
-                  }}
-                >
-                  <Eye className="mr-2 h-4 w-4" /> View Details
-                </Button>
+                    {/* Right side: Escalated */}
+                    {role === "staff"  && ticket.is_escalated && (
+                      <div className="inline-block px-3 py-1 bg-[#DC2626] text-white text-sm font-semibold rounded-full border border-[#DC2626] shadow-sm">
+                        Escalated
+                      </div>
+                    )}
+                    {/* Edit Complaint button — visible only for student + pending */}
+                    {role === "student" && ticket.status === "pending" && (
+                      <div className="inline-block py-1 pl-[1vw] ">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
+                          onClick={(e) => handleEditClick(ticket, e)}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" /> Edit Complaint
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
               </div>
 
-              {/* Edit Complaint button — visible only for student + pending */}
-              {role === "student" && ticket.status === "pending" && (
-                <div className="flex justify-end mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
-                    onClick={(e) => handleEditClick(ticket, e)}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" /> Edit Complaint
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
         ))}
