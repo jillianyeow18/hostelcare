@@ -271,90 +271,89 @@ const Dashboard = () => {
           <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
             {/* Stats cards omitted for brevity, same as your original code */}
             <div className="border grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center ">
-                    <div className="p-3 bg-gradient-to-br from-[#7323A8]/10 to-[#7323A8]/20 rounded-lg">
-                      <Ticket className="h-6 w-6 text-[#7323A8]" />
-                    </div>
-                    <p className=" text-sm text-gray-600 pl-2">Total Tickets</p>
+            <Card className="select-none bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
+              <CardContent className="p-6 flex items-start gap-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-gradient-to-br from-[#7323A8]/10 to-[#7323A8]/20 rounded-lg">
+                    <Ticket className="h-6 w-6 text-[#7323A8]" />
                   </div>
-                  <div className="flex justify-center items-center pt-3">
-                    <p className="text-3xl font-bold text-[#32004F]">
-                      {stats.total}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-3xl font-bold text-[#32004F]">
+                    {stats.total}
+                  </p>
+                  <p className="text-sm text-gray-600">Total Tickets</p>
+                </div>
+              </CardContent>
+            </Card>
 
-               <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-                <CardContent className="p-6">
+               <Card className="select-none bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
+                <CardContent className="p-6 flex items-start gap-8">
                   <div className="flex items-center">
                     <div className="p-3 bg-gradient-to-br from-[#E50085]/10 to-[#E50085]/20 rounded-lg">
                       <Clock className="h-6 w-6 text-[#E50085]" />
-                    </div>
-                    <p className="text-sm text-gray-600 pl-2">Pending</p>
+                    </div>                    
                   </div>
-                  <div className="flex justify-center items-center pt-3">
+                  <div className="space-y-1">
                     <p className="text-3xl font-bold text-[#32004F]">
                       {stats.pending}
                     </p>
+                    <p className="text-sm text-gray-600 pl-2">Pending</p>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-                <CardContent className="p-6">
+              <Card className="select-none bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
+                <CardContent className="p-6 flex items-start gap-8">
                   <div className="flex items-center">
                     <div className="p-3 bg-gradient-to-br from-[#E50085]/10 to-[#E50085]/20 rounded-lg">
                       <Clock className="h-6 w-6 text-[#E50085]" />
-                    </div>
-                    <p className="text-sm text-gray-600 pl-2">Escalated</p>
+                    </div>                    
                   </div>
-                  <div className="flex justify-center items-center pt-3">
+                  <div className="space-y-1">
                     <p className="text-3xl font-bold text-[#32004F]">
                       {stats.escalated}
                     </p>
+                    <p className="text-sm text-gray-600 pl-2">Escalated</p>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-                <CardContent className="p-6">
+              <Card className="select-none bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
+                <CardContent className="p-6 flex items-start gap-8">
                   <div className="flex items-center ">
                     <div className="p-3 bg-gradient-to-br from-[#FF5E5B]/10 to-[#FF5E5B]/20 rounded-lg">
                       <AlertCircle className="h-6 w-6 text-[#FF5E5B]" />
-                    </div>
-                    <p className="text-sm text-gray-600 pl-2">In Progress</p>
+                    </div>                    
                   </div>
-                  <div className="flex justify-center items-center pt-3">
+                  <div className="space-y-1">
                     <p className="text-3xl font-bold text-[#32004F]">
                       {stats.in_progress}
                     </p>
+                    <p className="text-sm text-gray-600 pl-2">In Progress</p>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-                <CardContent className="p-6">
+              <Card className="select-none bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
+                <CardContent className="p-6 flex items-start gap-8">
                   <div className="flex items-center ">
                     <div className="p-3 bg-gradient-to-br from-[#FFAC93]/30 to-[#FFAC93]/50 rounded-lg">
                       <CheckCircle2 className="h-6 w-6 text-[#32004F]" />
-                    </div>
-                    <p className="text-sm text-gray-600 pl-2">Resolved</p>
+                    </div>                    
                   </div>
-                  <div className="flex justify-center items-center pt-3">
+                  <div className="space-y-1">
                     <p className="text-3xl font-bold text-[#32004F]">
                       {stats.resolved}
                     </p>
-                    
+                    <p className="text-sm text-gray-600 pl-2">Resolved</p>
                   </div>
                 </CardContent>
               </Card>
               </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="select-none grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <Card className="bg-white border shadow-sm">
                 <CardHeader className="border-b pb-4">
                   <CardTitle className="text-lg font-semibold text-[#32004F] flex items-center gap-2">
@@ -482,7 +481,7 @@ const Dashboard = () => {
               </Card>
             </div>
 
-          <Card className="bg-white border-0 shadow-sm mb-6">
+          <Card className="select-none bg-white border-0 shadow-sm mb-6">
           {/* Navbar */}
           <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
           <CardContent className="p-4 sm:p-6">
