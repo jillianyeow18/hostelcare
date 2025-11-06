@@ -14,8 +14,13 @@ import {
   LogOut,
   Ticket,
   HelpCircle,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
   ChevronDown,
   UserPen,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SubmitComplaintDialog from "@/components/student/SubmitComplaintDialog";
@@ -77,7 +82,11 @@ const Dashboard = () => {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showEditProfileDialog, setShowEditProfileDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("mine");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<string>("desc");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [desaTickets, setDesaTickets] = useState<Ticket[]>([]);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
@@ -121,15 +130,46 @@ const Dashboard = () => {
     if (profile) {
       loadTickets();
       loadDesaTickets();
+      loadFilteredTickets();
     }
-  }, [profile]);
+  }, [profile, categoryFilter, statusFilter, sortOrder, searchQuery]);
+
+  useEffect(() => {
+    filterTickets();
+  }, [tickets, categoryFilter, statusFilter, searchQuery, sortOrder]);
+
+  const filterTickets = () => {
+    let result = [...tickets];
+
+    if (categoryFilter !== "all") {
+      result = result.filter((t) => t.category === categoryFilter);
+    }
+    if (statusFilter !== "all") {
+      result = result.filter((t) => t.status === statusFilter);
+    }
+    if (searchQuery.trim()) {
+      result = result.filter(
+        (t) =>
+          t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    result.sort((a, b) =>
+      sortOrder === "asc"
+        ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    setFilteredTickets(result);
+  };
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       navigate("/auth");
       return;
-    }
+  }
 
   const { data: profileData } = await supabase
     .from("profiles")
@@ -143,32 +183,6 @@ const Dashboard = () => {
     }
 
     setProfile(profileData);
-  };
-
-  const loadData = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: ticketsData, error } = await supabase
-        .from("tickets")
-        .select("*")
-        .eq("created_by", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setTickets(ticketsData || []);
-    } catch (error: any) {
-      toast({
-        title: "Error loading data",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const faqs = [
@@ -190,9 +204,57 @@ const Dashboard = () => {
     {
       question: "Can I edit my complaint after submission?",
       answer:
-        "Once submitted, complaints cannot be edited to maintain record integrity. However, you can add comments or additional information through the ticket details page. If you need to make significant changes, please contact the maintenance office.",
+        "You can still edit your complaint as long as its status is Pending. Once the status changes to Assigned, In Progress, or Resolved, editing is locked to maintain the integrity of the maintenance record. You can use the 'Edit Complaint' button on the ticket card to make changes.",
     },
   ];
+ // ------------------ Filters ------------------
+  const resetFilters = () => {
+    setCategoryFilter("all");
+    setStatusFilter("all");
+    setSortOrder("desc");
+    setSearchQuery("");
+    loadFilteredTickets(); // reload after resetting
+  };
+
+  const loadFilteredTickets = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Start base query
+      let query = supabase.from("tickets").select("*").eq("created_by", user.id);
+
+      // Apply filters dynamically
+      if (categoryFilter !== "all") {
+        query = query.eq("category", categoryFilter);
+      }
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
+      }
+
+      // Apply search (title or description)
+      if (searchQuery.trim() !== "") {
+        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+      }
+
+      // Sorting (ascending or descending by created_at)
+      query = query.order("created_at", { ascending: sortOrder === "asc" });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setFilteredTickets((data ?? []) as Ticket[]);
+    } catch (error: any) {
+      toast({
+        title: "Error loading filtered tickets",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ------------------ Load Tickets ------------------
 
@@ -274,6 +336,11 @@ console.log(data); // each ticket now has `attachments` array
   });
 
   const stats = activeTab === "mine" ? getStats(tickets) : getStats(desaTickets);
+  
+  const capitalizeFirstLetter = (string: string) => {
+    if (!string) return '';
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  };
 
   const categoryCounts = (activeTab === "mine" ? tickets : desaTickets).reduce(
     (acc: Record<string, number>, t) => {
@@ -284,7 +351,7 @@ console.log(data); // each ticket now has `attachments` array
   );
 
   const pieData = Object.keys(categoryCounts).map((key) => ({
-    name: key,
+    name: capitalizeFirstLetter(key),
     value: categoryCounts[key],
   }));
 
@@ -335,7 +402,72 @@ console.log(data); // each ticket now has `attachments` array
           {profile?.desasiswa && `${profile.desasiswa} • `}
           {profile?.room_number && `Room ${profile.room_number}`}
         </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
+            <CardContent className="p-6 flex items-start gap-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-[#7323A8]/10 to-[#7323A8]/20 rounded-lg">
+                  <Ticket className="h-6 w-6 text-[#7323A8]" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-[#32004F]">
+                  {stats.total}
+                </p>
+                <p className="text-sm text-gray-600">Total Tickets</p>
+              </div>
+            </CardContent>
+          </Card>
 
+          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
+            <CardContent className="p-6 flex items-start gap-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-[#E50085]/10 to-[#E50085]/20 rounded-lg">
+                  <Clock className="h-6 w-6 text-[#E50085]" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-[#32004F]">
+                  {stats.pending}
+                </p>
+                <p className="text-sm text-gray-600">Pending</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
+            <CardContent className="p-6 flex items-start gap-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-[#FF5E5B]/10 to-[#FF5E5B]/20 rounded-lg">
+                  <AlertCircle className="h-6 w-6 text-[#FF5E5B]" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-[#32004F]">
+                  {stats.in_progress}
+                </p>
+                <p className="text-sm text-gray-600">In Progress</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
+            <CardContent className="p-6 flex items-start gap-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-[#FFAC93]/30 to-[#FFAC93]/50 rounded-lg">
+                  <CheckCircle2 className="h-6 w-6 text-[#32004F]" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-[#32004F]">
+                  {stats.resolved}
+                </p>
+                <p className="text-sm text-gray-600">Resolved</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>        
+      
         {/* Tabs */}
         <Tabs defaultValue="mine" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-white mb-6">
@@ -481,9 +613,7 @@ console.log(data); // each ticket now has `attachments` array
           {/* My Tickets Section - Takes 2 columns */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-semibold text-[#32004F]">
-                My Tickets
-              </h3>
+              <h3 className="text-2xl font-semibold text-[#32004F]">My Tickets</h3>
               <Button
                 onClick={() => setShowSubmitDialog(true)}
                 className="bg-gradient-to-r from-[#7323A8] to-[#E50085] hover:from-[#32004F] hover:to-[#7323A8] text-white transition-all"
@@ -493,23 +623,94 @@ console.log(data); // each ticket now has `attachments` array
               </Button>
             </div>
 
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+
+              {/* Category Filter */}
+              <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value)} >
+                <SelectTrigger className="w-full sm:w-[160px] border-purple-200 focus:border-[#7323A8] focus:ring-[#7323A8]">
+                  <SelectValue placeholder="All Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Catgeories</SelectItem>
+                  <SelectItem value="plumbing">Plumbing</SelectItem>
+                  <SelectItem value="electrical">Electrical</SelectItem>
+                  <SelectItem value="cleaning">Cleaning</SelectItem>
+                  <SelectItem value="facilities">Facilities</SelectItem>
+                  <SelectItem value="others">Others</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Status Filter */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[130px] border-purple-200 focus:border-[#7323A8] focus:ring-[#7323A8]">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Search */}
+              <input
+                type="text"
+                placeholder="Search title or description..."
+                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchQuery}
+                className="flex-grow border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-[#7323A8]"
+              />
+
+              {/* Sort Button */}
+              <Button
+                onClick={() =>
+                  setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                }
+                variant="outline"
+                className="w-full sm:w-[100px] items-center border-[#7323A8] text-[#7323A8]"
+              >
+                {sortOrder === "asc" ? (
+                  <>
+                    <ArrowUp className="h-4 w-4 mr-1" /> Oldest
+                  </>
+                ) : (
+                  <>
+                    <ArrowDown className="h-4 w-4 mr-1" /> Newest
+                  </>
+                )}
+              </Button>
+
+              {/* Reset Button */}
+              <Button
+                onClick={resetFilters}
+                variant="outline"
+                className="border-gray-300 text-gray-600 hover:bg-gray-100"
+              >
+                Clear Filters
+              </Button>
+            </div>
+
+            {/* Ticket List Rendering */}
             {loading ? (
               <Card className="bg-white border-0 shadow-sm">
                 <CardContent className="py-12 text-center">
                   <p className="text-gray-600">Loading your tickets...</p>
                 </CardContent>
               </Card>
-            ) : tickets.length === 0 ? (
+            ) : filteredTickets.length === 0 ? (
               <Card className="bg-white border-0 shadow-sm">
                 <CardContent className="py-12 text-center">
                   <div className="p-4 bg-gradient-to-br from-[#7323A8]/10 to-[#E50085]/10 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <Ticket className="h-10 w-10 text-[#7323A8]" />
                   </div>
                   <CardTitle className="mb-2 text-[#32004F]">
-                    No tickets yet
+                    No tickets found
                   </CardTitle>
                   <CardDescription className="mb-4 text-gray-600">
-                    Submit your first maintenance complaint to get started
+                    Try adjusting filters or submit a new complaint.
                   </CardDescription>
                   <Button
                     onClick={() => setShowSubmitDialog(true)}
@@ -522,8 +723,8 @@ console.log(data); // each ticket now has `attachments` array
               </Card>
             ) : (
               <TicketList
-                tickets={tickets}
-                onUpdate={loadData}
+                tickets={filteredTickets}
+                onUpdate={loadFilteredTickets}
                 role="student"
               />
             )}
