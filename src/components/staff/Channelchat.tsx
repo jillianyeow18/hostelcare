@@ -575,16 +575,11 @@ const ChannelChat = () => {
                   <h3 className={`font-semibold text-sm mb-1 truncate ${
                     isEscalated ? 'text-red-700' : 'text-gray-900'
                   }`}>
-                    #{ticket.id.substring(0, 8)} - {ticket.title}
+                    Ticket #{ticket.id.substring(0, 8)} - {ticket.title}
                   </h3>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {getStatusBadge(ticket.status)}
                     {getUrgencyBadge(ticket.urgency)}
-                    {isEscalated && (
-                      <Badge className="bg-red-600 text-white text-xs">
-                        ⚠️ URGENT
-                      </Badge>
-                    )}
                   </div>
                 </div>
                 
@@ -612,13 +607,6 @@ const ChannelChat = () => {
           {/* Expanded Content */}
           <CollapsibleContent>
             <div className="mt-3 pl-12 space-y-2">
-              {/* Escalation Banner (Expanded State) */}
-              {/* {isEscalated && (
-                <div className="bg-red-600 text-white px-3 py-2 rounded-lg font-bold text-sm flex items-center gap-2 mb-3">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>URGENT - IMMEDIATE ATTENTION REQUIRED</span>
-                </div>
-              )} */}
 
               {/* Assignee */}
               <div className="flex items-center gap-2 text-xs text-gray-600 pb-2 border-b">
