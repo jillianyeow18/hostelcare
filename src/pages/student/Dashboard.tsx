@@ -487,20 +487,20 @@ console.log(data); // each ticket now has `attachments` array
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="h-64 flex items-center justify-center">
+                <div className="flex items-center justify-center">
                   <div className="text-center space-y-4 w-full">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="p-4 bg-[#E50085]/10 rounded-lg">
                         <p className="text-2xl font-bold text-[#E50085]">
                           {stats.pending}
                         </p>
-                        <p className="text-xs text-gray-700 mt-1">Pending</p>
+                        <p className="text-sm text-gray-700 mt-1">Pending</p>
                       </div>
                       <div className="p-4 bg-[#FF5E5B]/10 rounded-lg">
                         <p className="text-2xl font-bold text-[#FF5E5B]">
                           {stats.in_progress}
                         </p>
-                        <p className="text-xs text-gray-700 mt-1">
+                        <p className="text-sm text-gray-700 mt-1">
                           In Progress
                         </p>
                       </div>
@@ -508,12 +508,12 @@ console.log(data); // each ticket now has `attachments` array
                         <p className="text-2xl font-bold text-[#32004F]">
                           {stats.resolved}
                         </p>
-                        <p className="text-xs text-gray-700 mt-1">Resolved</p>
+                        <p className="text-sm text-gray-700 mt-1">Resolved</p>
                         </div>
                       </div>
-                      <div className="mt-6 space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">Resolution Rate</span>
+                      <div className="mt-6 space-y-3">
+                        <div className="flex items-center justify-between text-sm mt-8">
+                          <span className="text-gray-700 font-bold">Resolution Rate</span>
                           <span className="font-semibold text-[#32004F]">
                             {stats.total > 0
                               ? ((stats.resolved / stats.total) * 100).toFixed(
@@ -523,9 +523,9 @@ console.log(data); // each ticket now has `attachments` array
                             %
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full bg-gray-200 rounded-full h-3">
                           <div
-                            className="bg-gradient-to-r from-[#7323A8] via-[#E50085] to-[#FF5E5B] h-2 rounded-full transition-all"
+                            className="bg-gradient-to-r from-[#7323A8] via-[#E50085] to-[#FF5E5B] h-3 rounded-full transition-all"
                             style={{
                               width: `${
                                 stats.total > 0
@@ -542,13 +542,13 @@ console.log(data); // each ticket now has `attachments` array
               </Card>
 
             {/* Pie Chart */}
-            <Card className=" fill white bg-gradient-to-r from-[#7323A8] to-[#E50085] hover:from-[#32004F] hover:to-[#7323A8] text-white transition-all">
+            <Card className="bg-gradient-to-br from-[#32004F] via-[#7323A8] to-[#E50085] border-0 shadow-sm text-white">
               <CardHeader>
-                <CardTitle className= "text-lg font-semibold text-white">
+                <CardTitle className= "text-lg font-semibold text-white h-2 mb-2">
                   Category Distribution
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-64">
+              <CardContent className="bg-purple-50 h-60">
                 {pieData.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-500 text-sm">
                     No data
@@ -561,8 +561,7 @@ console.log(data); // each ticket now has `attachments` array
                       dataKey="value"
                       nameKey="name"
                       innerRadius={1}
-                      outerRadius={80}
-                      cy="40%"
+                      outerRadius={70}
                       label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, fill }) => {
                         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
                         const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
@@ -575,7 +574,7 @@ console.log(data); // each ticket now has `attachments` array
                             fill="white" 
                             textAnchor={x > cx ? 'start' : 'end'} 
                             dominantBaseline="central"
-                            fontSize="12px" 
+                            fontSize="13px" 
                             fontWeight="bold"
                           >
                             {`${(percent * 100).toFixed(0)}%`}
@@ -600,7 +599,16 @@ console.log(data); // each ticket now has `attachments` array
                     <Tooltip
                       formatter={(value, name) => [`${value} tickets`, name]} 
                     />
-                    <Legend verticalAlign="bottom" height={20} />
+                    <Legend 
+                      layout="vertical" 
+                      verticalAlign="middle" 
+                      align="right"
+                      formatter={(value) => (
+                        <span style={{ color: 'black', fontSize: '14px'}}>
+                          {value}
+                        </span>
+                      )}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 )}

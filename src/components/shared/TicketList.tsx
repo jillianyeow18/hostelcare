@@ -40,6 +40,11 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
     fetchUser();
   }, []);
 
+  const capitalizeFirstLetter = (string: string) => {
+    if (!string) return '';
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  };
+
   const handleTicketClick = (ticket: any) => {
     setSelectedTicket(ticket);
     setShowDetailsDialog(true);
@@ -167,9 +172,8 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
           <Card
             key={ticket.id}
             className="shadow-md hover:shadow-lg transition-all cursor-pointer relative"
-            onClick={() => handleTicketClick(ticket)}
           >
-            <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+            <CardContent className="select-none p-4 sm:p-6 flex flex-col h-full">
               <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 flex-grow">
                 <div className="flex-1 space-y-2 sm:space-y-3 w-full">
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4">
@@ -214,7 +218,7 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                       </Select>
                     ) : (
                       <Badge  className={`${getStatusColor(ticket.status)} px-3 py-1 text-sm`}>
-                        {ticket.status.replace("_", " ")}
+                        {capitalizeFirstLetter(ticket.status.replace("_", " "))}
                       </Badge>
                     )}
                     
