@@ -147,11 +147,105 @@ const ChannelChat = () => {
   const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   
+  // Notification tracking
+  const [unseenCount, setUnseenCount] = useState(0);
+  const hasMarkedAsSeen = useRef(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // --- NOTIFICATION FUNCTIONS ---
+  const loadUnseenCount = useCallback(async () => {
+    if (!profile?.id || !channelId) return;
+    
+    try {
+      console.log('Loading unseen count for:', { userId: profile.id, channelId });
+      
+      const { count, error } = await supabase
+        .from("notifications")
+        .select("*", { count: 'exact', head: true })
+        .eq("user_id", profile.id)
+        .eq("channel_id", channelId)
+        .eq("seen", false);
+
+      if (error) {
+        console.error('Error loading unseen count:', error);
+        throw error;
+      }
+      
+      console.log('Unseen count:', count);
+      setUnseenCount(count || 0);
+    } catch (error: any) {
+      console.error("Error loading unseen count:", error);
+    }
+  }, [profile?.id, channelId]);
+
+  const markChannelAsSeen = useCallback(async () => {
+    if (!profile?.id || !channelId || hasMarkedAsSeen.current) return;
+    
+    console.log('Attempting to mark notifications as seen:', {
+      userId: profile.id,
+      channelId,
+      timestamp: new Date().toISOString()
+    });
+    
+    try {
+      hasMarkedAsSeen.current = true;
+      
+      // First, check what notifications exist
+      const { data: beforeUpdate, error: checkError } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", profile.id)
+        .eq("channel_id", channelId)
+        .eq("seen", false);
+      
+      console.log('Found unseen notifications:', beforeUpdate?.length || 0, beforeUpdate);
+      
+      if (checkError) {
+        console.error('Error checking notifications:', checkError);
+        throw checkError;
+      }
+      
+      if (!beforeUpdate || beforeUpdate.length === 0) {
+        console.log('ℹNo unseen notifications to update');
+        setUnseenCount(0);
+        return;
+      }
+      
+      // Now update them
+      const { data: updated, error } = await supabase
+        .from("notifications")
+        .update({ seen: true })
+        .eq("user_id", profile.id)
+        .eq("channel_id", channelId)
+        .eq("seen", false)
+        .select();
+
+      if (error) {
+        console.error('Error updating notifications:', error);
+        throw error;
+      }
+      
+      console.log('Successfully marked as seen:', updated?.length || 0, 'notifications');
+      
+      setUnseenCount(0);
+      
+      // Emit event for sidebar to update
+      window.dispatchEvent(new CustomEvent('notificationsUpdated'));
+    } catch (error: any) {
+      console.error("Error in markChannelAsSeen:", error);
+      toast({
+        title: "Notification Error",
+        description: error.message || "Failed to mark notifications as seen",
+        variant: "destructive",
+      });
+      hasMarkedAsSeen.current = false;
+    }
+  }, [profile?.id, channelId, toast]);
 
   // --- AUTH & DATA LOADING ---
   const checkAuth = useCallback(async () => {
@@ -261,10 +355,14 @@ const ChannelChat = () => {
   // --- EFFECTS ---
   useEffect(() => {
     checkAuth();
-    if (channelId) {
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (channelId && profile?.id) {
       loadChannelData();
       loadMessages();
       loadMembers();
+      loadUnseenCount();
 
       const messagesSubscription = supabase
         .channel(`channel-${channelId}`)
@@ -303,11 +401,46 @@ const ChannelChat = () => {
         )
         .subscribe();
 
+      // Subscribe to notification changes
+      const notificationSubscription = supabase
+        .channel(`notifications-${channelId}-${profile.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${profile.id}`,
+          },
+          () => {
+            loadUnseenCount();
+          }
+        )
+        .subscribe();
+
       return () => {
         messagesSubscription.unsubscribe();
+        notificationSubscription.unsubscribe();
       };
     }
-  }, [channelId, checkAuth, loadMessages, loadMembers, loadChannelData, profile?.id]);
+  }, [channelId, profile?.id, loadChannelData, loadMessages, loadMembers, loadUnseenCount]);
+
+  // Mark channel as seen when user is actively viewing it
+  useEffect(() => {
+    if (channelId && profile?.id && messages.length > 0) {
+      // Mark as seen after a short delay to ensure user is actually viewing
+      const timer = setTimeout(() => {
+        markChannelAsSeen();
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [channelId, profile?.id, messages.length, markChannelAsSeen]);
+
+  // Reset hasMarkedAsSeen when changing channels
+  useEffect(() => {
+    hasMarkedAsSeen.current = false;
+  }, [channelId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -733,6 +866,11 @@ const ChannelChat = () => {
                     >
                       {channel?.staff_category}
                     </Badge>
+                    {unseenCount > 0 && (
+                      <Badge variant="destructive" className="animate-pulse">
+                        {unseenCount} unseen
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                     <Users className="h-4 w-4" />
