@@ -243,18 +243,10 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                       </p>
                     </div>
 
-                    {role === "staff" ? (
-                      ticket.assigned_to && (
-                        <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-md text-sm line-clamp-1 ">
-                          Incharged Staff: {ticket.staff.full_name}
-                        </div>
-                      )
-                    ) : (
-                      <Badge className={`${getStatusColor(ticket.status)} px-3 py-1 text-sm text-center`}>
-                        {ticket.status === "assigned" && ticket.assigned_to !== currentUserId
-                          ? `Assigned to ${ticket.assigned_to}`
-                          : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-                      </Badge>
+                    {role === "staff" && ticket.assigned_to && (
+                      <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-md text-sm line-clamp-1">
+                        Incharged Staff: {ticket.staff.full_name}
+                      </div>
                     )}
                   </div>
 
