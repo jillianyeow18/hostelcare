@@ -189,7 +189,7 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                         </p>
                       )}
                     </div>
- 
+
                     {role === "staff" ? (
                       <Select
                         value={ticket.status}
@@ -203,42 +203,60 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                         }
                       >
                         <SelectTrigger
-                          className="w-full sm:w-[140px]"
+                          className="w-full sm:w-[140px] h-8"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <SelectValue />
                         </SelectTrigger>
 
                         <SelectContent>
-                          <SelectItem value="pending"disabled={ticket.status === "in_progress" ||ticket.status === "resolved" } > Pending </SelectItem>
-                          <SelectItem value="assigned" disabled={ ticket.status === "in_progress" || ticket.status === "resolved"  } > Assigned </SelectItem>
-                          <SelectItem value="in_progress" disabled={ ticket.status === "resolved" || ticket.status === "pending" }>In Progress </SelectItem>
-                          <SelectItem value="resolved" disabled={ ticket.status === "pending" || ticket.status === "assigned" }>Resolved</SelectItem>
+                          <SelectItem value="pending" disabled={ticket.status === "in_progress" || ticket.status === "resolved"} > Pending </SelectItem>
+                          <SelectItem value="assigned" disabled={ticket.status === "in_progress" || ticket.status === "resolved"} > Assigned </SelectItem>
+                          <SelectItem value="in_progress" disabled={ticket.status === "resolved" || ticket.status === "pending"}>In Progress </SelectItem>
+                          <SelectItem value="resolved" disabled={ticket.status === "pending" || ticket.status === "assigned"}>Resolved</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge  className={`${getStatusColor(ticket.status)} px-3 py-1 text-sm`}>
+                      <Badge className={`${getStatusColor(ticket.status)} px-3 py-1 text-sm`}>
                         {capitalizeFirstLetter(ticket.status.replace("_", " "))}
                       </Badge>
                     )}
-                    
-                  <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleTicketClick(ticket);
-                  }}
-                >
-                  <Eye className="mr-2 h-4 w-4" /> View Details
-                </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTicketClick(ticket);
+                      }}
+                    >
+                      <Eye className="mr-2 h-4 w-4" /> View Details
+                    </Button>
 
                   </div>
 
-                  <p className="text-sm sm:text-base text-muted-foreground line-clamp-2">
-                    {ticket.description}
-                  </p>
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm sm:text-base text-muted-foreground line-clamp-2">
+                        {ticket.description}
+                      </p>
+                    </div>
+
+                    {role === "staff" ? (
+                      ticket.assigned_to && (
+                        <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-md text-sm line-clamp-1 ">
+                          Incharged Staff: {ticket.staff.full_name}
+                        </div>
+                      )
+                    ) : (
+                      <Badge className={`${getStatusColor(ticket.status)} px-3 py-1 text-sm text-center`}>
+                        {ticket.status === "assigned" && ticket.assigned_to !== currentUserId
+                          ? `Assigned to ${ticket.assigned_to}`
+                          : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                      </Badge>
+                    )}
+                  </div>
 
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                     <div className="flex items-center gap-1 text-muted-foreground">
@@ -253,14 +271,15 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                         })}
                       </span>
                     </div>
-                    <div
-                      className={`flex items-center gap-1 ${getUrgencyColor(
-                        ticket.urgency
-                      )}`}
-                    >
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="capitalize">{ticket.urgency}</span>
-                    </div>
+                    {ticket.status !== "resolved" && (
+                      <div
+                        className={`flex items-center gap-1 ${getUrgencyColor(ticket.urgency)}`}
+                      >
+                        <AlertCircle className="h-4 w-4" />
+                        <span className="capitalize">{ticket.urgency}</span>
+                      </div>
+                    )}
+
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -270,7 +289,7 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                     </Badge>
 
                     {/* Right side: Escalated */}
-                    {role === "staff"  && ticket.is_escalated && (
+                    {role === "staff" && ticket.is_escalated && (
                       <div className="inline-block px-3 py-1 bg-[#DC2626] text-white text-sm font-semibold rounded-full border border-[#DC2626] shadow-sm">
                         Escalated
                       </div>

@@ -6,7 +6,7 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
-  const tabs = ["Pending", "My Tickets", "Resolved"];
+  const tabs = ["All Tickets", "My Tickets", "Resolved"];
 
   return (
     <nav className="flex space-x-4 border-b border-gray-200 bg-white p-2">
