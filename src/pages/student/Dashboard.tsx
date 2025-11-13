@@ -414,7 +414,7 @@ console.log(data); // each ticket now has `attachments` array
                 <p className="text-3xl font-bold text-[#32004F]">
                   {stats.total}
                 </p>
-                <p className="text-sm text-gray-600">Total Tickets</p>
+                <p className="text-sm text-gray-600">Total Complaints</p>
               </div>
             </CardContent>
           </Card>
@@ -471,8 +471,8 @@ console.log(data); // each ticket now has `attachments` array
         {/* Tabs */}
         <Tabs defaultValue="mine" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-white mb-6">
-            <TabsTrigger value="mine">My Tickets</TabsTrigger>
-            <TabsTrigger value="desa">{profile?.desasiswa} Tickets</TabsTrigger>
+            <TabsTrigger value="mine">My Complaint</TabsTrigger>
+            <TabsTrigger value="desa">{profile?.desasiswa} Complaints</TabsTrigger>
           </TabsList>
 
           {/* Overview & Chart */}
@@ -482,7 +482,7 @@ console.log(data); // each ticket now has `attachments` array
               <CardHeader className="border-b pb-4">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-lg font-semibold text-[#32004F]">
-                    Tickets Overview
+                    Complaints Overview
                   </CardTitle>
                 </div>
               </CardHeader>
@@ -621,7 +621,7 @@ console.log(data); // each ticket now has `attachments` array
           {/* My Tickets Section - Takes 2 columns */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-semibold text-[#32004F]">My Tickets</h3>
+              <h3 className="text-2xl font-semibold text-[#32004F]">My Complaints</h3>
               <Button
                 onClick={() => setShowSubmitDialog(true)}
                 className="bg-gradient-to-r from-[#7323A8] to-[#E50085] hover:from-[#32004F] hover:to-[#7323A8] text-white transition-all"
@@ -715,7 +715,7 @@ console.log(data); // each ticket now has `attachments` array
                     <Ticket className="h-10 w-10 text-[#7323A8]" />
                   </div>
                   <CardTitle className="mb-2 text-[#32004F]">
-                    No tickets found
+                    No Complaint found
                   </CardTitle>
                   <CardDescription className="mb-4 text-gray-600">
                     Try adjusting filters or submit a new complaint.
