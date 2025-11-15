@@ -267,6 +267,9 @@ export type Database = {
           desasiswa: string;          
           damage_type: string;
           specific_item_or_location: string;
+          individual_room: string | null;
+          public_block: string | null;
+          public_floor: string | null;
           resolved_at: string | null;
           status: string;
           title: string;

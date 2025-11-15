@@ -38,11 +38,12 @@ const SubmitComplaintDialog = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [damageType, setDamageType] = useState(""); // Individual | Public
+  const [damageType, setDamageType] = useState("");
   const [specificSelection, setSpecificSelection] = useState("");
   const [urgency, setUrgency] = useState("medium");
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
+  const [publicBlock, setPublicBlock] = useState(""); 
+  const [publicFloor, setPublicFloor] = useState(""); 
 
   // Load user profile data
   useEffect(() => {
@@ -82,38 +83,34 @@ const SubmitComplaintDialog = ({
     e.preventDefault();
     setLoading(true);
 
-    // Client-side validation before attempting submission
     const errors: string[] = [];
     const allowedUrgency = ["low", "medium", "high", "urgent"];
 
-    if (!title || !title.trim()) errors.push("Title is required.");
-    if (!category || !category.trim()) errors.push("Category is required.");
+    if (!title.trim()) errors.push("Title is required.");
+    if (!category.trim()) errors.push("Category is required.");
     if (!damageType.trim()) errors.push("Damage Type is required.");
     if (!specificSelection.trim())
       errors.push("Please select a specific item/location.");
-    if (!description || !description.trim())
-      errors.push("Description is required.");
+    if (!description.trim()) errors.push("Description is required.");
     if (!urgency || !allowedUrgency.includes(urgency))
       errors.push("Please select a valid urgency level.");
+    if (!profile?.desasiswa) errors.push("Your desasiswa is not set.");
+    if (!profile?.room_number) errors.push("Your room number is not set.");
 
-    // Ensure profile has desasiswa and room number (these are shown as disabled inputs)
-    if (!profile?.desasiswa)
-      errors.push("Your desasiswa is not set in your profile.");
-    if (!profile?.room_number)
-      errors.push("Your room number is not set in your profile.");
+    if (damageType === "public") {
+      if (!publicBlock.trim()) errors.push("Block is required for public damage.");
+      if (!publicFloor.trim()) errors.push("Floor is required for public damage.");
+    }
 
-    // Photos limit (should already be enforced, but double-check)
     if (photos.length > 5) errors.push("You can upload up to 5 photos only.");
 
     if (errors.length > 0) {
-      setValidationErrors(errors);
-      setLoading(false);
-      // show first error in a toast and list others in console for debugging
       toast({
         title: "Validation error",
         description: errors.join(" "),
         variant: "destructive",
       });
+      setLoading(false);
       return;
     }
 
@@ -121,29 +118,15 @@ const SubmitComplaintDialog = ({
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) {
-        console.error("User not authenticated");
-        toast({
-          title: "Authentication Error",
-          description: "You must be logged in to submit a complaint.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (!user) throw new Error("User not authenticated");
 
-      console.log("Submitting ticket with data:", {
-        title,
-        description,
-        category,
-        urgency,
-        status: "pending",
-        created_by: user.id,
-        desasiswa: profile?.desasiswa,
-        damage_type: damageType,
-        specific_item_or_location: specificSelection,
-      });
+      const individualRoom = damageType === "individual" ? profile?.room_number : null;
+      const block =
+        damageType === "public" && publicBlock
+          ? publicBlock.trim().replace(/\s+/g, "").toUpperCase()
+          : null;
+      const floor = damageType === "public" ? publicFloor : null;
 
-      // Create ticket with explicit status
       const { data: ticket, error: ticketError } = await supabase
         .from("tickets")
         .insert({
@@ -154,71 +137,38 @@ const SubmitComplaintDialog = ({
           status: "pending",
           created_by: user.id,
           desasiswa: profile?.desasiswa,
-          damage_type: "Individual",
+          damage_type: damageType,
           specific_item_or_location: specificSelection,
+          individual_room: individualRoom,
+          public_block: block,
+          public_floor: floor,
         } as any)
         .select()
         .single();
 
-      if (ticketError) {
-        console.error("Ticket creation error:", ticketError);
-        console.error("Error details:", JSON.stringify(ticketError, null, 2));
-        toast({
-          title: "Database Error",
-          description: `Failed to create ticket: ${ticketError.message}. Code: ${ticketError.code}`,
-          variant: "destructive",
-        });
-        return;
-      }
+      if (ticketError) throw ticketError;
 
-      console.log("Ticket created successfully:", ticket);
-
-      // Upload photos if any
+      // Upload photos
       if (photos.length > 0 && ticket) {
-        console.log(`Uploading ${photos.length} photos...`);
         for (const photo of photos) {
           const fileName = `${ticket.id}/${Date.now()}-${photo.name}`;
-          console.log(`Uploading photo: ${fileName}`);
-
           const { error: uploadError } = await supabase.storage
             .from("ticket-attachments")
             .upload(fileName, photo);
 
-          if (uploadError) {
-            console.error("Upload error:", uploadError);
-            console.error(
-              "Upload error details:",
-              JSON.stringify(uploadError, null, 2)
-            );
-            // Continue even if upload fails
-            continue;
-          }
+          if (uploadError) continue;
 
-          const {
-            data: { publicUrl },
-          } = supabase.storage
+          const { data: { publicUrl } } = supabase.storage
             .from("ticket-attachments")
             .getPublicUrl(fileName);
 
-          console.log(`Photo uploaded, public URL: ${publicUrl}`);
-
-          const { error: attachmentError } = await supabase
-            .from("attachments")
-            .insert({
-              ticket_id: ticket.id,
-              file_url: publicUrl,
-              file_name: photo.name,
-              file_type: photo.type,
-              uploaded_by: user.id,
-            });
-
-          if (attachmentError) {
-            console.error("Attachment insert error:", attachmentError);
-            console.error(
-              "Attachment error details:",
-              JSON.stringify(attachmentError, null, 2)
-            );
-          }
+          await supabase.from("attachments").insert({
+            ticket_id: ticket.id,
+            file_url: publicUrl,
+            file_name: photo.name,
+            file_type: photo.type,
+            uploaded_by: user.id,
+          });
         }
       }
 
@@ -235,16 +185,14 @@ const SubmitComplaintDialog = ({
       setSpecificSelection("");
       setUrgency("medium");
       setPhotos([]);
+      setPublicBlock("");
+      setPublicFloor("");
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
-      console.error("Full error:", error);
-      console.error("Error stack:", error.stack);
       toast({
         title: "Submission failed",
-        description:
-          error.message ||
-          "An error occurred while submitting your complaint. Please try again.",
+        description: error.message || "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -254,7 +202,7 @@ const SubmitComplaintDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto select-none">
         <DialogHeader>
           <DialogTitle>Submit Maintenance Complaint</DialogTitle>
           <DialogDescription>
@@ -313,14 +261,15 @@ const SubmitComplaintDialog = ({
             </div>
           </div>
 
-          {/* DAMAGE TYPE */}
           <div className="space-y-2">
             <Label>Type of Damage</Label>
             <Select
               value={damageType}
               onValueChange={(val) => {
                 setDamageType(val);
-                setSpecificSelection(""); // reset selection
+                setSpecificSelection("");
+                setPublicBlock("");
+                setPublicFloor("");
               }}
               required
             >
@@ -328,25 +277,68 @@ const SubmitComplaintDialog = ({
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="individual">Individual</SelectItem>
-                <SelectItem value="public">Public</SelectItem>
+                <SelectItem value=" Individual">Individual</SelectItem>
+                <SelectItem value="Public">Public</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* INDIVIDUAL ITEM SELECTION */}
-          {damageType === "individual" && (
+          {/* Individual / Public conditional inputs */}
+          {damageType === "Individual" && (
             <div className="space-y-2">
-              <Label>Specific Item</Label>
-              <Select
-                value={specificSelection}
-                onValueChange={setSpecificSelection}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select item" />
-                </SelectTrigger>
-                <SelectContent>
+              <Label>Room Number (auto)</Label>
+              <Input value={profile?.room_number || ""} disabled className="bg-muted" />
+            </div>
+          )}
+
+          {damageType === "Public" && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Block</Label>
+                <Input
+                  placeholder="H13"
+                  value={publicBlock}
+                  onChange={(e) => setPublicBlock(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Floor</Label>
+                <Select
+                  value={publicFloor}
+                  onValueChange={setPublicFloor}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select floor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Whole Block">Whole Block</SelectItem>
+                    <SelectItem value="Ground">Ground</SelectItem>
+                    {Array.from({ length: 15 }, (_, i) => (
+                      <SelectItem key={i + 1} value={`${i + 1}`}>
+                        {i + 1}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="specificSelection">Specific Item / Location</Label>
+            <Select
+              value={specificSelection}
+              onValueChange={setSpecificSelection}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select item/location" />
+              </SelectTrigger>
+              <SelectContent>
+                {damageType === "Individual" ? (
+                  <>
                   <SelectItem value="Bed">Bed</SelectItem>
                   <SelectItem value="Ceiling Light">Ceiling Light</SelectItem>
                   <SelectItem value="Chair">Chair</SelectItem>
@@ -357,35 +349,23 @@ const SubmitComplaintDialog = ({
                   <SelectItem value="Wardrobe">Wardrobe</SelectItem>
                   <SelectItem value="Window">Window</SelectItem>
                   <SelectItem value="Others">Others</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* PUBLIC LOCATION SELECTION */}
-          {damageType === "public" && (
-            <div className="space-y-2">
-              <Label>Specific Location</Label>
-              <Select
-                value={specificSelection}
-                onValueChange={setSpecificSelection}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bathroom or Toilet">Bathroom or Toilet</SelectItem>
-                  <SelectItem value="Corridor">Corridor</SelectItem>
-                  <SelectItem value="Laundry Room">Laundry Room</SelectItem>
-                  <SelectItem value="Pantry">Pantry</SelectItem>
-                  <SelectItem value="Study Area">Study Area</SelectItem>
-                  <SelectItem value="Surau">Surau</SelectItem>
-                  <SelectItem value="Others">Others</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="Bathroom or Toilet">Bathroom or Toilet</SelectItem>
+                    <SelectItem value="Corridor">Corridor</SelectItem>
+                    <SelectItem value="Laundry Room">Laundry Room</SelectItem>
+                    <SelectItem value="Pantry">Pantry</SelectItem>
+                    <SelectItem value="Study Area">Study Area</SelectItem>
+                    <SelectItem value="Surau">Surau</SelectItem>
+                    <SelectItem value="Whole Block">Whole Block</SelectItem>
+                    <SelectItem value="Whole Floor">Whole Floor</SelectItem>
+                    <SelectItem value="Others">Others</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="urgency">Urgency</Label>
@@ -405,7 +385,6 @@ const SubmitComplaintDialog = ({
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
-              id="description"
               placeholder="Provide detailed information about the issue"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
