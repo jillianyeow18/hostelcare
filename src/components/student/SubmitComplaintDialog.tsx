@@ -38,7 +38,8 @@ const SubmitComplaintDialog = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [location, setLocation] = useState("");
+  const [damageType, setDamageType] = useState(""); // Individual | Public
+  const [specificSelection, setSpecificSelection] = useState("");
   const [urgency, setUrgency] = useState("medium");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -87,8 +88,9 @@ const SubmitComplaintDialog = ({
 
     if (!title || !title.trim()) errors.push("Title is required.");
     if (!category || !category.trim()) errors.push("Category is required.");
-    if (!location || !location.trim())
-      errors.push("Specific location is required.");
+    if (!damageType.trim()) errors.push("Damage Type is required.");
+    if (!specificSelection.trim())
+      errors.push("Please select a specific item/location.");
     if (!description || !description.trim())
       errors.push("Description is required.");
     if (!urgency || !allowedUrgency.includes(urgency))
@@ -133,11 +135,12 @@ const SubmitComplaintDialog = ({
         title,
         description,
         category,
-        location,
         urgency,
         status: "pending",
         created_by: user.id,
         desasiswa: profile?.desasiswa,
+        damage_type: damageType,
+        specific_item_or_location: specificSelection,
       });
 
       // Create ticket with explicit status
@@ -147,12 +150,13 @@ const SubmitComplaintDialog = ({
           title,
           description,
           category,
-          location,
           urgency,
           status: "pending",
           created_by: user.id,
           desasiswa: profile?.desasiswa,
-        })
+          damage_type: "Individual",
+          specific_item_or_location: specificSelection,
+        } as any)
         .select()
         .single();
 
@@ -227,7 +231,8 @@ const SubmitComplaintDialog = ({
       setTitle("");
       setDescription("");
       setCategory("");
-      setLocation("");
+      setDamageType("");
+      setSpecificSelection("");
       setUrgency("medium");
       setPhotos([]);
       onOpenChange(false);
@@ -308,16 +313,79 @@ const SubmitComplaintDialog = ({
             </div>
           </div>
 
+          {/* DAMAGE TYPE */}
           <div className="space-y-2">
-            <Label htmlFor="location">Specific Location</Label>
-            <Input
-              id="location"
-              placeholder="e.g., Bathroom, Kitchen, Living area"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
+            <Label>Type of Damage</Label>
+            <Select
+              value={damageType}
+              onValueChange={(val) => {
+                setDamageType(val);
+                setSpecificSelection(""); // reset selection
+              }}
               required
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="individual">Individual</SelectItem>
+                <SelectItem value="public">Public</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* INDIVIDUAL ITEM SELECTION */}
+          {damageType === "individual" && (
+            <div className="space-y-2">
+              <Label>Specific Item</Label>
+              <Select
+                value={specificSelection}
+                onValueChange={setSpecificSelection}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select item" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bed">Bed</SelectItem>
+                  <SelectItem value="Ceiling Light">Ceiling Light</SelectItem>
+                  <SelectItem value="Chair">Chair</SelectItem>
+                  <SelectItem value="Door">Door</SelectItem>
+                  <SelectItem value="Fan">Fan</SelectItem>
+                  <SelectItem value="Study Table">Study Table</SelectItem>
+                  <SelectItem value="Table Lamp">Table Lamp</SelectItem>
+                  <SelectItem value="Wardrobe">Wardrobe</SelectItem>
+                  <SelectItem value="Window">Window</SelectItem>
+                  <SelectItem value="Others">Others</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* PUBLIC LOCATION SELECTION */}
+          {damageType === "public" && (
+            <div className="space-y-2">
+              <Label>Specific Location</Label>
+              <Select
+                value={specificSelection}
+                onValueChange={setSpecificSelection}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bathroom or Toilet">Bathroom or Toilet</SelectItem>
+                  <SelectItem value="Corridor">Corridor</SelectItem>
+                  <SelectItem value="Laundry Room">Laundry Room</SelectItem>
+                  <SelectItem value="Pantry">Pantry</SelectItem>
+                  <SelectItem value="Study Area">Study Area</SelectItem>
+                  <SelectItem value="Surau">Surau</SelectItem>
+                  <SelectItem value="Others">Others</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="urgency">Urgency</Label>

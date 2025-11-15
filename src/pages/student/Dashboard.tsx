@@ -56,7 +56,8 @@ interface Ticket {
   title: string;
   description: string;
   category: string;
-  location: string;
+  damage_type: string;
+  specific_item_or_location: string;
   urgency: string;
   desasiswa?: string;
   status?: string;
@@ -82,6 +83,7 @@ const Dashboard = () => {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showEditProfileDialog, setShowEditProfileDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("mine");
+  const [typeFilter, setTypeFilter] = useState<string>("all"); 
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("desc");
@@ -126,20 +128,27 @@ const Dashboard = () => {
     checkAuth();
   }, []);
 
+  // ADDED typeFilter TO DEPENDENCY ARRAY
   useEffect(() => {
     if (profile) {
       loadTickets();
       loadDesaTickets();
       loadFilteredTickets();
     }
-  }, [profile, categoryFilter, statusFilter, sortOrder, searchQuery]);
+  }, [profile, categoryFilter, statusFilter, sortOrder, searchQuery, typeFilter]);
 
+  // ADDED typeFilter TO DEPENDENCY ARRAY
   useEffect(() => {
     filterTickets();
-  }, [tickets, categoryFilter, statusFilter, searchQuery, sortOrder]);
+  }, [tickets, categoryFilter, statusFilter, searchQuery, sortOrder, typeFilter]);
 
   const filterTickets = () => {
     let result = [...tickets];
+
+    // NEW TYPE FILTER LOGIC
+    if (typeFilter !== "all") {
+      result = result.filter((t) => t.damage_type === typeFilter);
+    }
 
     if (categoryFilter !== "all") {
       result = result.filter((t) => t.category === categoryFilter);
@@ -169,13 +178,13 @@ const Dashboard = () => {
     if (!user) {
       navigate("/auth");
       return;
-  }
+    }
 
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
 
     if (profileData?.role !== "student") {
       navigate("/staff");
@@ -209,6 +218,7 @@ const Dashboard = () => {
   ];
  // ------------------ Filters ------------------
   const resetFilters = () => {
+    setTypeFilter("all"); 
     setCategoryFilter("all");
     setStatusFilter("all");
     setSortOrder("desc");
@@ -226,6 +236,11 @@ const Dashboard = () => {
       let query = supabase.from("tickets").select("*").eq("created_by", user.id);
 
       // Apply filters dynamically
+      // NEW TYPE FILTER APPLICATION
+      if (typeFilter !== "all") {
+        query = query.eq("damage_type", typeFilter);
+      }
+      
       if (categoryFilter !== "all") {
         query = query.eq("category", categoryFilter);
       }
@@ -265,14 +280,14 @@ const Dashboard = () => {
 
       const { data, error } = await supabase
         .from("tickets")
-         .select(`
-            *,
-            attachments:attachments (
-              id,
-              file_url,
-              file_name
-            )
-          `)
+        .select(`
+           *,
+           attachments:attachments (
+             id,
+             file_url,
+             file_name
+           )
+         `)
         .eq("created_by", user.id)
         .order("created_at", { ascending: false });
 
@@ -293,17 +308,16 @@ const Dashboard = () => {
     if (!profile?.desasiswa) return;
 
     try {
-      // @ts-expect-error deep type inference issue
       const { data, error } = await supabase
         .from("tickets")
         .select(`
-          *,
-          attachments:attachments (
-            id,
-            file_url,
-            file_name
-          )
-        `)
+           *,
+           attachments:attachments (
+             id,
+             file_url,
+             file_name
+           )
+         `)
         .eq("desasiswa", profile.desasiswa)
         .order("created_at", { ascending: false });
 
@@ -466,7 +480,7 @@ console.log(data); // each ticket now has `attachments` array
               </div>
             </CardContent>
           </Card>
-        </div>        
+        </div>        
       
         {/* Tabs */}
         <Tabs defaultValue="mine" value={activeTab} onValueChange={setActiveTab}>
@@ -531,7 +545,7 @@ console.log(data); // each ticket now has `attachments` array
                                 stats.total > 0
                                   ? (stats.resolved / stats.total) * 100
                                   : 0
-                              }%`,
+                                }%`,
                             }}
                           />
                         </div>
@@ -633,7 +647,19 @@ console.log(data); // each ticket now has `attachments` array
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-
+              
+              {/* NEW Type Filter (Damage Type) - Placed before Category Filter */}
+              <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value)} >
+                <SelectTrigger className="w-full sm:w-[130px] border-purple-200 focus:border-[#7323A8] focus:ring-[#7323A8]">
+                  <SelectValue placeholder="All Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Individual">Individual</SelectItem>
+                  <SelectItem value="Public">Public</SelectItem>
+                </SelectContent>
+              </Select>
+              
               {/* Category Filter */}
               <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value)} >
                 <SelectTrigger className="w-full sm:w-[160px] border-purple-200 focus:border-[#7323A8] focus:ring-[#7323A8]">

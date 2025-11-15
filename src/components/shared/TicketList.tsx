@@ -253,7 +253,7 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <MapPin className="h-4 w-4" />
-                      <span>{ticket.location}</span>
+                      <span>{ticket.specific_item_or_location}</span>
                     </div>
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <Clock className="h-4 w-4" />

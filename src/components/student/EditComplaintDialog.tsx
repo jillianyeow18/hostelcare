@@ -25,7 +25,16 @@ interface EditComplaintDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  ticketId: string | null; // The ID of the complaint to edit
+  ticketId: string | null;
+}
+
+interface TicketData {
+  title: string;
+  description: string;
+  category: string;
+  urgency: string;
+  damage_type: string;
+  specific_item_or_location: string;
 }
 
 const EditComplaintDialog = ({
@@ -40,7 +49,8 @@ const EditComplaintDialog = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [location, setLocation] = useState("");
+  const [damageType, setDamageType] = useState("");
+  const [specificItemOrLocation, setSpecificItemOrLocation] = useState("");
   const [urgency, setUrgency] = useState("medium");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -77,12 +87,13 @@ const EditComplaintDialog = ({
           });
           return;
         }
-
-        if (ticketData) {
+        const ticket = ticketData as unknown as TicketData;
+        if (ticket) {
           setTitle(ticketData.title || "");
           setDescription(ticketData.description || "");
           setCategory(ticketData.category || "");
-          setLocation(ticketData.location || "");
+          setDamageType(ticketData.damage_type || ""); 
+          setSpecificItemOrLocation(ticketData.specific_item_or_location || "");
           setUrgency(ticketData.urgency || "medium");
         }
 
@@ -95,6 +106,8 @@ const EditComplaintDialog = ({
       }
     };
 
+    // Reset local photo state on dialog open
+    setPhotos([]);
     if (open && ticketId) {
       loadData();
     }
@@ -102,7 +115,17 @@ const EditComplaintDialog = ({
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).slice(0, 5 - photos.length);
+      // Calculate remaining slots: max 5 total photos (existing + new)
+      const maxNewPhotos = 5 - existingPhotos.length;
+      if (maxNewPhotos <= 0) {
+        toast({
+            title: "Photo Limit Reached",
+            description: "You cannot upload more than 5 photos in total.",
+            variant: "destructive"
+        });
+        return;
+      }
+      const newPhotos = Array.from(e.target.files).slice(0, maxNewPhotos - photos.length);
       setPhotos([...photos, ...newPhotos]);
     }
   };
@@ -115,6 +138,16 @@ const EditComplaintDialog = ({
     const { error } = await supabase.from("attachments").delete().eq("id", id);
     if (!error) {
       setExistingPhotos(existingPhotos.filter((photo) => photo.id !== id));
+      toast({
+          title: "Photo Removed",
+          description: "Existing photo deleted successfully.",
+      });
+    } else {
+        toast({
+            title: "Deletion Failed",
+            description: error.message,
+            variant: "destructive",
+        });
     }
   };
 
@@ -126,7 +159,9 @@ const EditComplaintDialog = ({
     const errors: string[] = [];
     if (!title.trim()) errors.push("Title is required.");
     if (!category.trim()) errors.push("Category is required.");
-    if (!location.trim()) errors.push("Specific location is required.");
+    if (!damageType.trim()) errors.push("Damage Type is required.");
+    if (!specificItemOrLocation.trim())
+        errors.push("Specific Item or Location is required.");
     if (!description.trim()) errors.push("Description is required.");
 
     if (errors.length > 0) {
@@ -145,18 +180,18 @@ const EditComplaintDialog = ({
         title,
         description,
         category,
-        location,
+        damage_type: damageType,
+        specific_item_or_location: specificItemOrLocation,
         urgency,
       };
 
-        const { data: updated, error: updateError } = await supabase
+      const { data: updated, error: updateError } = await supabase
         .from("tickets")
         .update(updateData)
         .eq("id", ticketId)
         .select();
 
-        console.log("Updated rows:", updated);
-        console.log("Updating ticket:", ticketId, updateData);
+      console.log("Updating ticket:", ticketId, updateData);
 
       if (updateError) {
         toast({
@@ -214,6 +249,9 @@ const EditComplaintDialog = ({
     }
   };
 
+  const totalPhotos = existingPhotos.length + photos.length;
+  const maxPhotos = 5;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto select-none">
@@ -231,12 +269,13 @@ const EditComplaintDialog = ({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              required
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select value={category} onValueChange={setCategory}>
+            <Select value={category} onValueChange={setCategory} required>
               <SelectTrigger id="category">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -255,26 +294,91 @@ const EditComplaintDialog = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Desasiswa</Label>
-              <Input value={profile?.desasiswa || ""} disabled />
+              <Input value={profile?.desasiswa || ""} disabled className="bg-muted" />
             </div>
             <div className="space-y-2">
               <Label>Room Number</Label>
-              <Input value={profile?.room_number || ""} disabled />
+              <Input value={profile?.room_number || ""} disabled className="bg-muted" />
             </div>
           </div>
-
+          
+          {/* NEW: DAMAGE TYPE SELECTION */}
           <div className="space-y-2">
-            <Label htmlFor="location">Specific Location</Label>
-            <Input
-              id="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
+            <Label>Type of Damage</Label>
+            <Select
+              value={damageType}
+              onValueChange={(val) => {
+                setDamageType(val);
+                setSpecificItemOrLocation(""); // reset selection
+              }}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Individual">Individual</SelectItem>
+                <SelectItem value="Public">Public</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* NEW: SPECIFIC ITEM/LOCATION SELECTION (Conditional) */}
+          {damageType === "Individual" && (
+            <div className="space-y-2">
+              <Label>Specific Item</Label>
+              <Select
+                value={specificItemOrLocation}
+                onValueChange={setSpecificItemOrLocation}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select item" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bed">Bed</SelectItem>
+                  <SelectItem value="Ceiling Light">Ceiling Light</SelectItem>
+                  <SelectItem value="Chair">Chair</SelectItem>
+                  <SelectItem value="Door">Door</SelectItem>
+                  <SelectItem value="Fan">Fan</SelectItem>
+                  <SelectItem value="Study Table">Study Table</SelectItem>
+                  <SelectItem value="Table Lamp">Table Lamp</SelectItem>
+                  <SelectItem value="Wardrobe">Wardrobe</SelectItem>
+                  <SelectItem value="Window">Window</SelectItem>
+                  <SelectItem value="Others">Others</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {damageType === "Public" && (
+            <div className="space-y-2">
+              <Label>Specific Location</Label>
+              <Select
+                value={specificItemOrLocation}
+                onValueChange={setSpecificItemOrLocation}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bathroom or Toilet">Bathroom or Toilet</SelectItem>
+                  <SelectItem value="Corridor">Corridor</SelectItem>
+                  <SelectItem value="Laundry Room">Laundry Room</SelectItem>
+                  <SelectItem value="Pantry">Pantry</SelectItem>
+                  <SelectItem value="Study Area">Study Area</SelectItem>
+                  <SelectItem value="Surau">Surau</SelectItem>
+                  <SelectItem value="Others">Others</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {/* END NEW FIELDS */}
 
           <div className="space-y-2">
             <Label htmlFor="urgency">Urgency</Label>
-            <Select value={urgency} onValueChange={setUrgency}>
+            <Select value={urgency} onValueChange={setUrgency} required>
               <SelectTrigger id="urgency">
                 <SelectValue />
               </SelectTrigger>
@@ -294,13 +398,14 @@ const EditComplaintDialog = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
+              required
             />
           </div>
 
           {/* Existing Photos */}
           {existingPhotos.length > 0 && (
             <div className="space-y-2">
-              <Label>Existing Photos</Label>
+              <Label>Existing Photos (Click to remove)</Label>
               <div className="flex flex-wrap gap-2">
                 {existingPhotos.map((photo) => (
                   <div key={photo.id} className="relative">
@@ -324,7 +429,7 @@ const EditComplaintDialog = ({
 
           {/* Add New Photos */}
           <div className="space-y-2">
-            <Label>Upload New Photos (optional)</Label>
+            <Label>Upload New Photos (optional, {maxPhotos - totalPhotos} remaining)</Label>
             <div className="flex flex-wrap gap-2">
               {photos.map((photo, index) => (
                 <div key={index} className="relative">
@@ -342,7 +447,7 @@ const EditComplaintDialog = ({
                   </button>
                 </div>
               ))}
-              {photos.length < 5 && (
+              {totalPhotos < maxPhotos && (
                 <label className="h-20 w-20 border-2 border-dashed rounded flex items-center justify-center cursor-pointer hover:bg-muted transition-colors">
                   <ImagePlus className="h-6 w-6 text-muted-foreground" />
                   <input

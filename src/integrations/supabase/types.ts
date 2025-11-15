@@ -264,7 +264,9 @@ export type Database = {
           created_by: string;
           description: string;
           id: string;
-          location: string;
+          desasiswa: string;          
+          damage_type: string;
+          specific_item_or_location: string;
           resolved_at: string | null;
           status: string;
           title: string;

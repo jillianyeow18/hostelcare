@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
-import { startOfMonth, endOfMonth, eachDayOfInterval, format } from "date-fns";
+import { startOfMonth, endOfMonth, eachDayOfInterval, format, set } from "date-fns";
 
 import {
   Select,
@@ -45,6 +45,7 @@ const Dashboard = () => {
   const [filteredTickets, setFilteredTickets] = useState<any[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [damageTypeFilter, setDamageTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [desasiswaFilter, setDesasiswaFilter] = useState("all");
   const [urgencyFilter, setUrgencyFilter] = useState("all");
@@ -67,6 +68,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (activeTab !== "All Tickets") {
       setSearchQuery("");
+      setDamageTypeFilter("all");
       setStatusFilter("all");
       setDesasiswaFilter("all");
       setUrgencyFilter("all");
@@ -76,7 +78,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [tickets, searchQuery, statusFilter, desasiswaFilter, urgencyFilter, sortOrder]);
+  }, [tickets, searchQuery, damageTypeFilter, statusFilter, desasiswaFilter, urgencyFilter, sortOrder]);
 
 
   const checkAuth = async () => {
@@ -164,6 +166,12 @@ const Dashboard = () => {
           t.profiles?.full_name
             ?.toLowerCase()
             .includes(searchQuery.toLowerCase())
+      );
+    }
+    // Damage type filter
+    if (damageTypeFilter !== "all") {
+      filtered = filtered.filter(
+        (t) => t.damage_type === damageTypeFilter
       );
     }
 
@@ -595,6 +603,19 @@ const Dashboard = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* Damage Type Select */}
+                  <div className="flex-1">
+                    <Select value={damageTypeFilter} onValueChange={setDamageTypeFilter}>
+                      <SelectTrigger className="w-full border-purple-200 focus:border-[#7323A8] focus:ring-[#7323A8]">
+                        <SelectValue placeholder="All Damage Types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Complaint Types</SelectItem>
+                        <SelectItem value="Individual">Individual Complaints</SelectItem>
+                        <SelectItem value="Public">Public Complaints</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {activeTab !== "Resolved" && (
                     <div className="flex-1">
@@ -667,6 +688,7 @@ const Dashboard = () => {
                       className="w-full border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
                       onClick={() => {
                         setSearchQuery("");
+                        setDamageTypeFilter("all");
                         setStatusFilter("all");
                         setDesasiswaFilter("all");
                         setUrgencyFilter("all");
@@ -688,7 +710,7 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             ) : displayedTickets.length === 0 ? (
-              <Card className="bg-white border-0 shadow-sm">
+              <Card className="bg-white border-0 shadow-sm select-none">
                 <CardContent className="py-12 text-center">
                   <p className="text-gray-500">No tickets to display</p>
                 </CardContent>

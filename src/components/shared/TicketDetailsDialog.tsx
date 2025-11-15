@@ -573,8 +573,8 @@ const TicketDetailsDialog = ({
               <div className="mt-1">{getUrgencyBadge(ticket?.urgency)}</div>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Location</p>
-              <p className="font-medium text-[#32004F]">{ticket?.location}</p>
+              <p className="text-sm text-gray-600">Item or Location</p>
+              <p className="font-medium text-[#32004F]">{ticket?.specific_item_or_location}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Created</p>
