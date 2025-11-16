@@ -207,8 +207,62 @@ const Dashboard = () => {
       filtered.sort((a, b) => new Date(b.resolved_at).getTime() - new Date(a.resolved_at).getTime());
     }
 
+    const finalFiltered = groupPublicTickets(filtered);
     setFilteredTickets(filtered);
   };
+
+  // Group public tickets by desasiswa, specific_item_or_location, public_block, public_floor
+  const groupPublicTickets = (tickets: any[]) => {
+    const grouped: any[] = [];
+    const map: Map<string, any[]> = new Map();
+
+    tickets.forEach((ticket) => {
+      if (ticket.damage_type?.toLowerCase() !== "public") {
+        // Individual tickets remain ungrouped
+        grouped.push(ticket);
+        return;
+      }
+
+      const key = [
+        ticket.profiles?.desasiswa,
+        ticket.specific_item_or_location,
+        ticket.public_block,
+        ticket.public_floor
+      ].join("||");
+
+      // Initialize array for this key if it doesn't exist
+      if (!map.has(key)) map.set(key, []);
+
+      const groupArray = map.get(key)!;
+
+      // Check if ticket can be grouped with any existing ticket in this key
+      const existingGroup = groupArray.find((t) => {
+        if (!t.created_at || !ticket.created_at) return false;
+        const diff = Math.abs(new Date(t.created_at).getTime() - new Date(ticket.created_at).getTime());
+        return diff <= 2 * 24 * 60 * 60 * 1000; // 2 days in ms
+      });
+
+      if (existingGroup) {
+        // Add to the same group
+        existingGroup.tickets.push(ticket);
+        existingGroup.count += 1;
+      } else {
+        // Create a new group with this ticket
+        groupArray.push({ representative: ticket, tickets: [ticket], count: 1 });
+      }
+    });
+
+    // Flatten all groups into result
+    map.forEach((groups) => {
+      groups.forEach((g) => {
+        if (g.count > 1) grouped.push(g);
+        else grouped.push(g.representative);
+      });
+    });
+
+    return grouped;
+  };
+
 
   // Stats
   const stats = {
@@ -283,6 +337,7 @@ const Dashboard = () => {
         return true;
     }
   });
+
 
   // Pagination
   const indexOfLastTicket = currentPage * ticketsPerPage;
@@ -553,7 +608,7 @@ const Dashboard = () => {
                         }
                         className="text-1xl font-bold text-white hover:text-purple-500"
                       >
-                        &lt; 
+                        &lt;
                       </button>
 
                       {/* Month label */}
@@ -566,7 +621,7 @@ const Dashboard = () => {
                         }
                         className="text-1xl font-bold text-white hover:text-purple-500"
                       >
-                        &gt; 
+                        &gt;
                       </button>
                     </div>
 
