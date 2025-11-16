@@ -140,8 +140,8 @@ const SubmitComplaintDialog = ({
           damage_type: damageType,
           specific_item_or_location: specificSelection,
           individual_room: individualRoom,
-          public_block: block,
-          public_floor: floor,
+          public_block: publicBlock,
+          public_floor: publicFloor,
         } as any)
         .select()
         .single();
@@ -277,7 +277,7 @@ const SubmitComplaintDialog = ({
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value=" Individual">Individual</SelectItem>
+                <SelectItem value="Individual">Individual</SelectItem>
                 <SelectItem value="Public">Public</SelectItem>
               </SelectContent>
             </Select>
