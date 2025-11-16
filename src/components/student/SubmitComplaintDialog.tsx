@@ -39,9 +39,10 @@ const SubmitComplaintDialog = ({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [damageType, setDamageType] = useState("");
-  const [specificSelection, setSpecificSelection] = useState("");
+  const [specificItemOrLocation, setSpecificItemOrLocation] = useState("");
   const [urgency, setUrgency] = useState("medium");
   const [photos, setPhotos] = useState<File[]>([]);
+  const [individualRoom, setIndividualRoom] = useState(profile?.room_number || "");
   const [publicBlock, setPublicBlock] = useState(""); 
   const [publicFloor, setPublicFloor] = useState(""); 
 
@@ -89,7 +90,7 @@ const SubmitComplaintDialog = ({
     if (!title.trim()) errors.push("Title is required.");
     if (!category.trim()) errors.push("Category is required.");
     if (!damageType.trim()) errors.push("Damage Type is required.");
-    if (!specificSelection.trim())
+    if (!specificItemOrLocation.trim())
       errors.push("Please select a specific item/location.");
     if (!description.trim()) errors.push("Description is required.");
     if (!urgency || !allowedUrgency.includes(urgency))
@@ -97,7 +98,7 @@ const SubmitComplaintDialog = ({
     if (!profile?.desasiswa) errors.push("Your desasiswa is not set.");
     if (!profile?.room_number) errors.push("Your room number is not set.");
 
-    if (damageType === "public") {
+    if (damageType === "Public") {
       if (!publicBlock.trim()) errors.push("Block is required for public damage.");
       if (!publicFloor.trim()) errors.push("Floor is required for public damage.");
     }
@@ -120,12 +121,11 @@ const SubmitComplaintDialog = ({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      const individualRoom = damageType === "individual" ? profile?.room_number : null;
       const block =
-        damageType === "public" && publicBlock
+        damageType === "Public" && publicBlock
           ? publicBlock.trim().replace(/\s+/g, "").toUpperCase()
           : null;
-      const floor = damageType === "public" ? publicFloor : null;
+      const floor = damageType === "Public" ? publicFloor : null;
 
       const { data: ticket, error: ticketError } = await supabase
         .from("tickets")
@@ -138,10 +138,10 @@ const SubmitComplaintDialog = ({
           created_by: user.id,
           desasiswa: profile?.desasiswa,
           damage_type: damageType,
-          specific_item_or_location: specificSelection,
+          specific_item_or_location: specificItemOrLocation,
           individual_room: individualRoom,
-          public_block: publicBlock,
-          public_floor: publicFloor,
+          public_block: block,
+          public_floor: floor,
         } as any)
         .select()
         .single();
@@ -182,9 +182,10 @@ const SubmitComplaintDialog = ({
       setDescription("");
       setCategory("");
       setDamageType("");
-      setSpecificSelection("");
+      setSpecificItemOrLocation("");
       setUrgency("medium");
       setPhotos([]);
+      setIndividualRoom("");
       setPublicBlock("");
       setPublicFloor("");
       onOpenChange(false);
@@ -267,9 +268,14 @@ const SubmitComplaintDialog = ({
               value={damageType}
               onValueChange={(val) => {
                 setDamageType(val);
-                setSpecificSelection("");
-                setPublicBlock("");
-                setPublicFloor("");
+                setSpecificItemOrLocation(""); 
+                if (val === "Individual") {
+                  setPublicBlock("");
+                  setPublicFloor("");
+                  setIndividualRoom(profile?.room_number || "");
+                } else if (val === "Public") {
+                  setIndividualRoom("");
+                }
               }}
               required
             >
@@ -283,75 +289,89 @@ const SubmitComplaintDialog = ({
             </Select>
           </div>
 
-          {/* Individual / Public conditional inputs */}
+          {/* Conditional Fields */}
           {damageType === "Individual" && (
-            <div className="space-y-2">
-              <Label>Room Number (auto)</Label>
-              <Input value={profile?.room_number || ""} disabled className="bg-muted" />
-            </div>
-          )}
+            <div className="space-y-4">
 
-          {damageType === "Public" && (
-            <div className="grid grid-cols-2 gap-4">
+              {/* Room Number (auto-filled) */}
               <div className="space-y-2">
-                <Label>Block</Label>
+                <Label>Room Number</Label>
                 <Input
-                  placeholder="H13"
-                  value={publicBlock}
-                  onChange={(e) => setPublicBlock(e.target.value)}
-                  required
+                  value={profile?.room_number || ""}
+                  disabled
+                  className="bg-muted"
                 />
               </div>
+
+              {/* Specific Item */}
               <div className="space-y-2">
-                <Label>Floor</Label>
+                <Label>Specific Item</Label>
                 <Select
-                  value={publicFloor}
-                  onValueChange={setPublicFloor}
+                  value={specificItemOrLocation}
+                  onValueChange={setSpecificItemOrLocation}
                   required
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select floor" />
+                    <SelectValue placeholder="Select item" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Whole Block">Whole Block</SelectItem>
-                    <SelectItem value="Ground">Ground</SelectItem>
-                    {Array.from({ length: 15 }, (_, i) => (
-                      <SelectItem key={i + 1} value={`${i + 1}`}>
-                        {i + 1}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="Bed">Bed</SelectItem>
+                    <SelectItem value="Ceiling Light">Ceiling Light</SelectItem>
+                    <SelectItem value="Chair">Chair</SelectItem>
+                    <SelectItem value="Door">Door</SelectItem>
+                    <SelectItem value="Fan">Fan</SelectItem>
+                    <SelectItem value="Study Table">Study Table</SelectItem>
+                    <SelectItem value="Table Lamp">Table Lamp</SelectItem>
+                    <SelectItem value="Wardrobe">Wardrobe</SelectItem>
+                    <SelectItem value="Window">Window</SelectItem>
+                    <SelectItem value="Others">Others</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label htmlFor="specificSelection">Specific Item / Location</Label>
-            <Select
-              value={specificSelection}
-              onValueChange={setSpecificSelection}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select item/location" />
-              </SelectTrigger>
-              <SelectContent>
-                {damageType === "Individual" ? (
-                  <>
-                  <SelectItem value="Bed">Bed</SelectItem>
-                  <SelectItem value="Ceiling Light">Ceiling Light</SelectItem>
-                  <SelectItem value="Chair">Chair</SelectItem>
-                  <SelectItem value="Door">Door</SelectItem>
-                  <SelectItem value="Fan">Fan</SelectItem>
-                  <SelectItem value="Study Table">Study Table</SelectItem>
-                  <SelectItem value="Table Lamp">Table Lamp</SelectItem>
-                  <SelectItem value="Wardrobe">Wardrobe</SelectItem>
-                  <SelectItem value="Window">Window</SelectItem>
-                  <SelectItem value="Others">Others</SelectItem>
-                  </>
-                ) : (
-                  <>
+          {damageType === "Public" && (
+            <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Block</Label>
+                  <Input
+                    placeholder="example: H13"
+                    value={publicBlock}
+                    onChange={(e) => setPublicBlock(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Floor</Label>
+                  <Select value={publicFloor} onValueChange={setPublicFloor} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select floor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Whole Block">Whole Block</SelectItem>
+                      <SelectItem value="Ground">Ground</SelectItem>
+                      {Array.from({ length: 20 }, (_, i) => (
+                        <SelectItem key={i + 1} value={`${i + 1}`}>
+                          {i + 1}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Specific Location</Label>
+                <Select
+                  value={specificItemOrLocation}
+                  onValueChange={setSpecificItemOrLocation}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
                     <SelectItem value="Bathroom or Toilet">Bathroom or Toilet</SelectItem>
                     <SelectItem value="Corridor">Corridor</SelectItem>
                     <SelectItem value="Laundry Room">Laundry Room</SelectItem>
@@ -361,11 +381,11 @@ const SubmitComplaintDialog = ({
                     <SelectItem value="Whole Block">Whole Block</SelectItem>
                     <SelectItem value="Whole Floor">Whole Floor</SelectItem>
                     <SelectItem value="Others">Others</SelectItem>
-                  </>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="urgency">Urgency</Label>

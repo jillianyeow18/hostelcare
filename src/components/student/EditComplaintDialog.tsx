@@ -315,6 +315,7 @@ const EditComplaintDialog = ({
                 if (val === "Individual") {
                   setPublicBlock("");
                   setPublicFloor("");
+                  setIndividualRoom(profile?.room_number || "");
                 } else if (val === "Public") {
                   setIndividualRoom("");
                 }
@@ -333,29 +334,44 @@ const EditComplaintDialog = ({
 
           {/* Conditional Fields */}
           {damageType === "Individual" && (
-            <div className="space-y-2">
-              <Label>Specific Item</Label>
-              <Select
-                value={specificItemOrLocation}
-                onValueChange={setSpecificItemOrLocation}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select item" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bed">Bed</SelectItem>
-                  <SelectItem value="Ceiling Light">Ceiling Light</SelectItem>
-                  <SelectItem value="Chair">Chair</SelectItem>
-                  <SelectItem value="Door">Door</SelectItem>
-                  <SelectItem value="Fan">Fan</SelectItem>
-                  <SelectItem value="Study Table">Study Table</SelectItem>
-                  <SelectItem value="Table Lamp">Table Lamp</SelectItem>
-                  <SelectItem value="Wardrobe">Wardrobe</SelectItem>
-                  <SelectItem value="Window">Window</SelectItem>
-                  <SelectItem value="Others">Others</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+
+              {/* Room Number (auto-filled) */}
+              <div className="space-y-2">
+                <Label>Room Number (auto)</Label>
+                <Input
+                  value={profile?.room_number || ""}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+
+              {/* Specific Item */}
+              <div className="space-y-2">
+                <Label>Specific Item</Label>
+                <Select
+                  value={specificItemOrLocation}
+                  onValueChange={setSpecificItemOrLocation}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bed">Bed</SelectItem>
+                    <SelectItem value="Ceiling Light">Ceiling Light</SelectItem>
+                    <SelectItem value="Chair">Chair</SelectItem>
+                    <SelectItem value="Door">Door</SelectItem>
+                    <SelectItem value="Fan">Fan</SelectItem>
+                    <SelectItem value="Study Table">Study Table</SelectItem>
+                    <SelectItem value="Table Lamp">Table Lamp</SelectItem>
+                    <SelectItem value="Wardrobe">Wardrobe</SelectItem>
+                    <SelectItem value="Window">Window</SelectItem>
+                    <SelectItem value="Others">Others</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
             </div>
           )}
 
