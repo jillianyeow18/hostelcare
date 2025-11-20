@@ -259,6 +259,19 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                       </Button>
                     </div>
 
+                    {ticket.damage_type === "Public" ? (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">Block : {ticket.public_block}</p>
+                        <p className="text-xs text-muted-foreground">Floor : {ticket.public_floor}</p>
+                      </div>
+                    ) : ticket.damage_type === "Individual" ? (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">Room : {ticket.individual_room}</p>
+                      </div>
+                    ) : null}
+
+
+
                     {/* Ticket description */}
                     <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4">
                       <div className="flex-1 min-w-0">
@@ -293,34 +306,34 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                         </div>
                       )}
                     </div>
-					
-					 <div className="flex items-center justify-between">
-                    {/* Left side: Category */}
-                    <Badge variant="outline" className="capitalize">
-                      {ticket.category}
-                    </Badge>
 
-                    {/* Right side: Escalated */}
-                    {role === "staff" && ticket.is_escalated && (
-                      <div className="inline-block px-3 py-1 bg-[#DC2626] text-white text-sm font-semibold rounded-full border border-[#DC2626] shadow-sm">
-                        Escalated
-                      </div>
-                    )}
-                    {/* Edit Complaint button — visible only for student + pending */}
-                    {role === "student" && ticket.status === "pending" && (
-                      <div className="inline-block py-1 pl-[1vw] ">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
-                          onClick={(e) => handleEditClick(ticket, e)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" /> Edit Complaint
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-				  
+                    <div className="flex items-center justify-between">
+                      {/* Left side: Category */}
+                      <Badge variant="outline" className="capitalize">
+                        {ticket.category}
+                      </Badge>
+
+                      {/* Right side: Escalated */}
+                      {role === "staff" && ticket.is_escalated && (
+                        <div className="inline-block px-3 py-1 bg-[#DC2626] text-white text-sm font-semibold rounded-full border border-[#DC2626] shadow-sm">
+                          Escalated
+                        </div>
+                      )}
+                      {/* Edit Complaint button — visible only for student + pending */}
+                      {role === "student" && ticket.status === "pending" && (
+                        <div className="inline-block py-1 pl-[1vw] ">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
+                            onClick={(e) => handleEditClick(ticket, e)}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" /> Edit Complaint
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Group info */}
                     {isGroup && group && group.length > 1 && (
                       <div className="mt-2 flex justify-between items-center text-xs sm:text-sm text-muted-foreground">
@@ -352,12 +365,12 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                                   <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4">
                                     <div className="flex-1 min-w-0">
                                       <h4 className="font-semibold text-base sm:text-lg mb-1 break-words">
-                                        {ticket.title}
+                                        {t.title}
                                       </h4>
                                       {role === "staff" && ticket.profiles && (
                                         <p className="text-xs sm:text-sm text-muted-foreground break-words">
-                                          By {ticket.profiles.full_name} • {ticket.profiles.desasiswa}{" "}
-                                          {ticket.profiles.room_number}
+                                          By {t.profiles.full_name} • {t.profiles.desasiswa}{" "}
+                                          {t.profiles.room_number}
                                         </p>
                                       )}
                                     </div>
@@ -367,16 +380,21 @@ const TicketList = ({ tickets, onUpdate, role }: TicketListProps) => {
                                       className="border-[#7323A8] text-[#7323A8] hover:bg-[#7323A8] hover:text-white transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleTicketClick(ticket);
+                                        handleTicketClick(t);
                                       }}
                                     >
                                       <Eye className="mr-2 h-4 w-4" /> View Details
                                     </Button>
                                   </div>
 
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground">Block : {t.public_block}</p>
+                                    <p className="text-xs text-muted-foreground">Floor : {t.public_floor}</p>
+                                  </div>
 
                                   {/* Description */}
                                   <span className="text-xs text-muted-foreground">{t.description}</span>
+
 
                                   {/* Location, Time, Urgency */}
                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
