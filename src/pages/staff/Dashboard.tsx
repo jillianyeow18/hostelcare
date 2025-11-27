@@ -479,7 +479,7 @@ const Dashboard = () => {
                 <CardHeader className="border-b pb-4">
                   <CardTitle className="text-lg font-semibold text-[#32004F] flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-[#7323A8]" />
-                    Hostels By Tickets
+                    Tickets By Hostels
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -645,7 +645,7 @@ const Dashboard = () => {
                         <SelectValue placeholder="All Hostels" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">🏠 All Hostels</SelectItem>
+                        <SelectItem value="all">All Hostels</SelectItem>
                         <SelectItem value="Aman Damai">Aman Damai</SelectItem>
                         <SelectItem value="Fajar Harapan">Fajar Harapan</SelectItem>
                         <SelectItem value="Bakti Permai">Bakti Permai</SelectItem>

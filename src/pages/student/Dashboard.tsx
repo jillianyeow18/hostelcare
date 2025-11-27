@@ -83,7 +83,7 @@ const Dashboard = () => {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showEditProfileDialog, setShowEditProfileDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("mine");
-  const [typeFilter, setTypeFilter] = useState<string>("all"); 
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("desc");
@@ -113,7 +113,7 @@ const Dashboard = () => {
           cx={cx}
           cy={cy}
           innerRadius={innerRadius}
-          outerRadius={outerRadius + 5} 
+          outerRadius={outerRadius + 5}
           startAngle={startAngle}
           endAngle={endAngle}
           fill={fill}
@@ -216,9 +216,9 @@ const Dashboard = () => {
         "You can still edit your complaint as long as its status is Pending. Once the status changes to Assigned, In Progress, or Resolved, editing is locked to maintain the integrity of the maintenance record. You can use the 'Edit Complaint' button on the ticket card to make changes.",
     },
   ];
- // ------------------ Filters ------------------
+  // ------------------ Filters ------------------
   const resetFilters = () => {
-    setTypeFilter("all"); 
+    setTypeFilter("all");
     setCategoryFilter("all");
     setStatusFilter("all");
     setSortOrder("desc");
@@ -240,7 +240,7 @@ const Dashboard = () => {
       if (typeFilter !== "all") {
         query = query.eq("damage_type", typeFilter);
       }
-      
+
       if (categoryFilter !== "all") {
         query = query.eq("category", categoryFilter);
       }
@@ -321,8 +321,8 @@ const Dashboard = () => {
         .eq("desasiswa", profile.desasiswa)
         .order("created_at", { ascending: false });
 
-if (error) console.error(error);
-console.log(data); // each ticket now has `attachments` array
+      if (error) console.error(error);
+      console.log(data); // each ticket now has `attachments` array
 
 
 
@@ -350,7 +350,7 @@ console.log(data); // each ticket now has `attachments` array
   });
 
   const stats = activeTab === "mine" ? getStats(tickets) : getStats(desaTickets);
-  
+
   const capitalizeFirstLetter = (string: string) => {
     if (!string) return '';
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -416,72 +416,7 @@ console.log(data); // each ticket now has `attachments` array
           {profile?.desasiswa && `${profile.desasiswa} • `}
           {profile?.room_number && `Room ${profile.room_number}`}
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-            <CardContent className="p-6 flex items-start gap-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-[#7323A8]/10 to-[#7323A8]/20 rounded-lg">
-                  <Ticket className="h-6 w-6 text-[#7323A8]" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-bold text-[#32004F]">
-                  {stats.total}
-                </p>
-                <p className="text-sm text-gray-600">Total Complaints</p>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-            <CardContent className="p-6 flex items-start gap-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-[#E50085]/10 to-[#E50085]/20 rounded-lg">
-                  <Clock className="h-6 w-6 text-[#E50085]" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-bold text-[#32004F]">
-                  {stats.pending}
-                </p>
-                <p className="text-sm text-gray-600">Pending</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-            <CardContent className="p-6 flex items-start gap-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-[#FF5E5B]/10 to-[#FF5E5B]/20 rounded-lg">
-                  <AlertCircle className="h-6 w-6 text-[#FF5E5B]" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-bold text-[#32004F]">
-                  {stats.in_progress}
-                </p>
-                <p className="text-sm text-gray-600">In Progress</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:scale-105">
-            <CardContent className="p-6 flex items-start gap-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-gradient-to-br from-[#FFAC93]/30 to-[#FFAC93]/50 rounded-lg">
-                  <CheckCircle2 className="h-6 w-6 text-[#32004F]" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-bold text-[#32004F]">
-                  {stats.resolved}
-                </p>
-                <p className="text-sm text-gray-600">Resolved</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>        
-      
         {/* Tabs */}
         <Tabs defaultValue="mine" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-white mb-6">
@@ -503,8 +438,15 @@ console.log(data); // each ticket now has `attachments` array
               <CardContent className="p-6">
                 <div className="flex items-center justify-center">
                   <div className="text-center space-y-4 w-full">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="p-4 bg-[#E50085]/10 rounded-lg">
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="p-4 bg-[#C00070]/10 rounded-lg">
+                        <p className="text-2xl font-bold text-[#E50085]">
+                          {stats.total}
+                        </p>
+                          <p className="text-sm text-gray-700">Total Complaints</p>
+
+                      </div>
+                      <div className="p-4 bg-[#F155B2]/10 rounded-lg">
                         <p className="text-2xl font-bold text-[#E50085]">
                           {stats.pending}
                         </p>
@@ -523,42 +465,41 @@ console.log(data); // each ticket now has `attachments` array
                           {stats.resolved}
                         </p>
                         <p className="text-sm text-gray-700 mt-1">Resolved</p>
-                        </div>
                       </div>
-                      <div className="mt-6 space-y-3">
-                        <div className="flex items-center justify-between text-sm mt-8">
-                          <span className="text-gray-700 font-bold">Resolution Rate</span>
-                          <span className="font-semibold text-[#32004F]">
-                            {stats.total > 0
-                              ? ((stats.resolved / stats.total) * 100).toFixed(
-                                  0
-                                )
-                              : 0}
-                            %
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3">
-                          <div
-                            className="bg-gradient-to-r from-[#7323A8] via-[#E50085] to-[#FF5E5B] h-3 rounded-full transition-all"
-                            style={{
-                              width: `${
-                                stats.total > 0
-                                  ? (stats.resolved / stats.total) * 100
-                                  : 0
-                                }%`,
-                            }}
-                          />
-                        </div>
+                    </div>
+                    <div className="mt-6 space-y-3">
+                      <div className="flex items-center justify-between text-sm mt-8">
+                        <span className="text-gray-700 font-bold">Resolution Rate</span>
+                        <span className="font-semibold text-[#32004F]">
+                          {stats.total > 0
+                            ? ((stats.resolved / stats.total) * 100).toFixed(
+                              0
+                            )
+                            : 0}
+                          %
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-[#7323A8] via-[#E50085] to-[#FF5E5B] h-3 rounded-full transition-all"
+                          style={{
+                            width: `${stats.total > 0
+                                ? (stats.resolved / stats.total) * 100
+                                : 0
+                              }%`,
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Pie Chart */}
             <Card className="bg-gradient-to-br from-[#32004F] via-[#7323A8] to-[#E50085] border-0 shadow-sm text-white">
               <CardHeader>
-                <CardTitle className= "text-lg font-semibold text-white h-2 mb-2">
+                <CardTitle className="text-lg font-semibold text-white h-2 mb-2">
                   Category Distribution
                 </CardTitle>
               </CardHeader>
@@ -568,63 +509,63 @@ console.log(data); // each ticket now has `attachments` array
                     No data
                   </div>
                 ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={1}
-                      outerRadius={70}
-                      label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, fill }) => {
-                        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                        const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
-                        const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={1}
+                        outerRadius={70}
+                        label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, fill }) => {
+                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                          const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+                          const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
 
-                        return (
-                          <text 
-                            x={x} 
-                            y={y} 
-                            fill="white" 
-                            textAnchor={x > cx ? 'start' : 'end'} 
-                            dominantBaseline="central"
-                            fontSize="13px" 
-                            fontWeight="bold"
-                          >
-                            {`${(percent * 100).toFixed(0)}%`}
-                          </text>
-                        );
-                      }}
-                      labelLine={false}
-                      isAnimationActive
-                      activeIndex={activeIndex}
-                      activeShape={(props) => <ActiveShape {...props} />} 
-                      onMouseEnter={(_, index) => setActiveIndex(index)} 
-                      onMouseLeave={() => setActiveIndex(-1)}
-                    >
-                      {pieData.map((_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                          cursor="pointer"
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value, name) => [`${value} tickets`, name]} 
-                    />
-                    <Legend 
-                      layout="vertical" 
-                      verticalAlign="middle" 
-                      align="right"
-                      formatter={(value) => (
-                        <span style={{ color: 'black', fontSize: '14px'}}>
-                          {value}
-                        </span>
-                      )}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              fill="white"
+                              textAnchor={x > cx ? 'start' : 'end'}
+                              dominantBaseline="central"
+                              fontSize="13px"
+                              fontWeight="bold"
+                            >
+                              {`${(percent * 100).toFixed(0)}%`}
+                            </text>
+                          );
+                        }}
+                        labelLine={false}
+                        isAnimationActive
+                        activeIndex={activeIndex}
+                        activeShape={(props) => <ActiveShape {...props} />}
+                        onMouseEnter={(_, index) => setActiveIndex(index)}
+                        onMouseLeave={() => setActiveIndex(-1)}
+                      >
+                        {pieData.map((_, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                            cursor="pointer"
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value, name) => [`${value} tickets`, name]}
+                      />
+                      <Legend
+                        layout="vertical"
+                        verticalAlign="middle"
+                        align="right"
+                        formatter={(value) => (
+                          <span style={{ color: 'black', fontSize: '14px' }}>
+                            {value}
+                          </span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 )}
               </CardContent>
             </Card>
@@ -647,7 +588,7 @@ console.log(data); // each ticket now has `attachments` array
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              
+
               {/* NEW Type Filter (Damage Type) - Placed before Category Filter */}
               <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value)} >
                 <SelectTrigger className="w-full sm:w-[130px] border-purple-200 focus:border-[#7323A8] focus:ring-[#7323A8]">
@@ -659,7 +600,7 @@ console.log(data); // each ticket now has `attachments` array
                   <SelectItem value="Public">Public</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               {/* Category Filter */}
               <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value)} >
                 <SelectTrigger className="w-full sm:w-[160px] border-purple-200 focus:border-[#7323A8] focus:ring-[#7323A8]">
@@ -790,9 +731,8 @@ console.log(data); // each ticket now has `attachments` array
                           {faq.question}
                         </span>
                         <ChevronDown
-                          className={`h-5 w-5 text-[#7323A8] flex-shrink-0 transition-transform ${
-                            expandedFAQ === index ? "rotate-180" : ""
-                          }`}
+                          className={`h-5 w-5 text-[#7323A8] flex-shrink-0 transition-transform ${expandedFAQ === index ? "rotate-180" : ""
+                            }`}
                         />
                       </button>
                       {expandedFAQ === index && (
