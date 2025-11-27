@@ -78,7 +78,6 @@ interface TicketGroup {
 }
 
 // --- CONSTANTS ---
-const TICKETS_PER_PAGE = 10;
 const ACTIVITIES_PREVIEW_COUNT = 2;
 
 // --- HELPER FUNCTIONS ---
@@ -140,10 +139,9 @@ const ChannelChat = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   
-  // Ticket filtering & pagination
+  // Ticket filtering
   const [ticketFilter, setTicketFilter] = useState<"all" | "escalated" | "active" | "resolved">("all");
   const [urgencyFilter, setUrgencyFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
   const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -545,7 +543,7 @@ const ChannelChat = () => {
     });
   }, [messages, expandedTickets]);
 
-  // --- FILTERED & PAGINATED TICKETS ---
+  // --- FILTERED TICKETS ---
   const filteredTickets = useMemo(() => {
     let filtered = ticketActivityGroups;
 
@@ -577,14 +575,6 @@ const ChannelChat = () => {
 
     return filtered;
   }, [ticketActivityGroups, ticketFilter, urgencyFilter, searchQuery]);
-
-  const paginatedTickets = useMemo(() => {
-    const startIndex = (currentPage - 1) * TICKETS_PER_PAGE;
-    const endIndex = startIndex + TICKETS_PER_PAGE;
-    return filteredTickets.slice(startIndex, endIndex);
-  }, [filteredTickets, currentPage]);
-
-  const totalPages = Math.ceil(filteredTickets.length / TICKETS_PER_PAGE);
 
   const regularMessages = useMemo(() => {
     return messages.filter(
@@ -915,17 +905,11 @@ const ChannelChat = () => {
                 <Input
                   placeholder="Search tickets..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="max-w-xs h-9 text-sm"
                 />
                 
-                <Select value={ticketFilter} onValueChange={(value: any) => {
-                  setTicketFilter(value);
-                  setCurrentPage(1);
-                }}>
+                <Select value={ticketFilter} onValueChange={(value: any) => setTicketFilter(value)}>
                   <SelectTrigger className="w-[140px] h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
@@ -937,10 +921,7 @@ const ChannelChat = () => {
                   </SelectContent>
                 </Select>
 
-                <Select value={urgencyFilter} onValueChange={(value) => {
-                  setUrgencyFilter(value);
-                  setCurrentPage(1);
-                }}>
+                <Select value={urgencyFilter} onValueChange={(value) => setUrgencyFilter(value)}>
                   <SelectTrigger className="w-[130px] h-9 text-sm">
                     <SelectValue placeholder="Urgency" />
                   </SelectTrigger>
@@ -954,7 +935,7 @@ const ChannelChat = () => {
                 </Select>
 
                 <div className="ml-auto text-xs text-gray-600">
-                  Showing {paginatedTickets.length} of {filteredTickets.length}
+                  Showing {Math.min(4, filteredTickets.length)} of {filteredTickets.length}
                 </div>
               </div>
             </div>
@@ -976,36 +957,24 @@ const ChannelChat = () => {
                 </div>
               ) : (
                 <>
-                  {/* Ticket Activity Groups (Paginated) */}
-                  {paginatedTickets.map(renderTicketActivityGroup)}
-                  
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 my-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        Previous
-                      </Button>
-                      <span className="text-sm text-gray-600">
-                        Page {currentPage} of {totalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                      >
-                        Next
-                      </Button>
+                  {/* Scrollable Ticket Activity Groups (Max 4 visible) */}
+                  {filteredTickets.length > 0 && (
+                    <div className="mb-6">
+                      <div className="max-h-[400px] overflow-y-auto pr-2 space-y-0">
+                        {filteredTickets.slice(0, 4).map(renderTicketActivityGroup)}
+                      </div>
+                      {filteredTickets.length > 4 && (
+                        <div className="mt-3 text-center">
+                          <p className="text-xs text-gray-500 bg-gray-100 inline-block px-3 py-1.5 rounded-full">
+                            Scroll up to see all {filteredTickets.length} tickets
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                   
                   {/* Regular Messages */}
-                  <div className="space-y-1 mt-6">
+                  <div className="space-y-1">
                     <h3 className="text-sm font-semibold text-gray-700 mb-3 px-4">Discussion</h3>
                     {regularMessages.map(renderRegularMessage)}
                   </div>
