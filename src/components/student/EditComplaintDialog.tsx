@@ -19,7 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { sessionMiddleware } from "@/components/session/session-tracking-middleware";
 import { ImagePlus, X } from "lucide-react";
+import { sanitizeInput } from "@/lib/sanitize";
+import { validators } from "@/lib/validation";
 
 interface EditComplaintDialogProps {
   open: boolean;
@@ -42,13 +45,15 @@ const EditComplaintDialog = ({
   const [category, setCategory] = useState("");
   const [damageType, setDamageType] = useState("");
   const [specificItemOrLocation, setSpecificItemOrLocation] = useState("");
-  const [individualRoom, setIndividualRoom] = useState(profile?.room_number || "");
+  const [individualRoom, setIndividualRoom] = useState(
+    profile?.room_number || ""
+  );
   const [publicBlock, setPublicBlock] = useState("");
   const [publicFloor, setPublicFloor] = useState("");
   const [urgency, setUrgency] = useState("medium");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
-  const [existingPhotos, setExistingPhotos] = useState<any[]>([]); 
+  const [existingPhotos, setExistingPhotos] = useState<any[]>([]);
 
   // Load user profile and complaint details
   useEffect(() => {
@@ -85,9 +90,11 @@ const EditComplaintDialog = ({
           setTitle(ticketData.title || "");
           setDescription(ticketData.description || "");
           setCategory(ticketData.category || "");
-          setDamageType(ticketData.damage_type || ""); 
+          setDamageType(ticketData.damage_type || "");
           setSpecificItemOrLocation(ticketData.specific_item_or_location || "");
-          setIndividualRoom(ticketData.individual_room || profile?.room_number || "");
+          setIndividualRoom(
+            ticketData.individual_room || profile?.room_number || ""
+          );
           setPublicBlock(ticketData.public_block || "");
           setPublicFloor(ticketData.public_floor || "");
           setUrgency(ticketData.urgency || "medium");
@@ -115,13 +122,16 @@ const EditComplaintDialog = ({
       const maxNewPhotos = 5 - existingPhotos.length;
       if (maxNewPhotos <= 0) {
         toast({
-            title: "Photo Limit Reached",
-            description: "You cannot upload more than 5 photos in total.",
-            variant: "destructive"
+          title: "Photo Limit Reached",
+          description: "You cannot upload more than 5 photos in total.",
+          variant: "destructive",
         });
         return;
       }
-      const newPhotos = Array.from(e.target.files).slice(0, maxNewPhotos - photos.length);
+      const newPhotos = Array.from(e.target.files).slice(
+        0,
+        maxNewPhotos - photos.length
+      );
       setPhotos([...photos, ...newPhotos]);
     }
   };
@@ -135,15 +145,15 @@ const EditComplaintDialog = ({
     if (!error) {
       setExistingPhotos(existingPhotos.filter((photo) => photo.id !== id));
       toast({
-          title: "Photo Removed",
-          description: "Existing photo deleted successfully.",
+        title: "Photo Removed",
+        description: "Existing photo deleted successfully.",
       });
     } else {
-        toast({
-            title: "Deletion Failed",
-            description: error.message,
-            variant: "destructive",
-        });
+      toast({
+        title: "Deletion Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -153,12 +163,28 @@ const EditComplaintDialog = ({
     setValidationErrors([]);
 
     const errors: string[] = [];
-    if (!title.trim()) errors.push("Title is required.");
-    if (!category.trim()) errors.push("Category is required.");
+
+    // Enhanced validation
+    const titleValidation = validators.textLength(title, 3, 200, "Title");
+    if (!titleValidation.valid) errors.push(titleValidation.error!);
+
+    const descValidation = validators.textLength(
+      description,
+      10,
+      2000,
+      "Description"
+    );
+    if (!descValidation.valid) errors.push(descValidation.error!);
+
+    const categoryValidation = validators.category(category);
+    if (!categoryValidation.valid) errors.push(categoryValidation.error!);
+
+    const urgencyValidation = validators.urgency(urgency);
+    if (!urgencyValidation.valid) errors.push(urgencyValidation.error!);
+
     if (!damageType.trim()) errors.push("Damage Type is required.");
     if (!specificItemOrLocation.trim())
-        errors.push("Specific Item or Location is required.");
-    if (!description.trim()) errors.push("Description is required.");
+      errors.push("Specific Item or Location is required.");
 
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -172,16 +198,22 @@ const EditComplaintDialog = ({
     }
 
     try {
+      // Sanitize all text inputs
       const updateData = {
-        title,
-        description,
+        title: sanitizeInput.limitedText(title, 200),
+        description: sanitizeInput.limitedText(description, 2000),
         category,
         damage_type: damageType,
-        specific_item_or_location: specificItemOrLocation,
+        specific_item_or_location: sanitizeInput.limitedText(
+          specificItemOrLocation,
+          200
+        ),
         individual_room: damageType === "Individual" ? individualRoom : null,
         public_block:
           damageType === "Public" && publicBlock
-            ? publicBlock.trim().replace(/\s+/g, "").toUpperCase()
+            ? sanitizeInput.text(
+                publicBlock.trim().replace(/\s+/g, "").toUpperCase()
+              )
             : null,
         public_floor: damageType === "Public" ? publicFloor : null,
         urgency,
@@ -236,6 +268,16 @@ const EditComplaintDialog = ({
       toast({
         title: "Complaint updated",
         description: "Your complaint has been successfully updated.",
+      });
+
+      // Log session activity for complaint update
+      await sessionMiddleware.logActivity({
+        activityType: "complaint_updated",
+        metadata: {
+          ticket_id: ticketId,
+          category,
+          urgency,
+        },
       });
 
       onSuccess();
@@ -296,14 +338,22 @@ const EditComplaintDialog = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Desasiswa</Label>
-              <Input value={profile?.desasiswa || ""} disabled className="bg-muted" />
+              <Input
+                value={profile?.desasiswa || ""}
+                disabled
+                className="bg-muted"
+              />
             </div>
             <div className="space-y-2">
               <Label>Room Number</Label>
-              <Input value={profile?.room_number || ""} disabled className="bg-muted" />
+              <Input
+                value={profile?.room_number || ""}
+                disabled
+                className="bg-muted"
+              />
             </div>
           </div>
-          
+
           {/* DAMAGE TYPE SELECTION */}
           <div className="space-y-2">
             <Label>Type of Damage</Label>
@@ -311,7 +361,7 @@ const EditComplaintDialog = ({
               value={damageType}
               onValueChange={(val) => {
                 setDamageType(val);
-                setSpecificItemOrLocation(""); 
+                setSpecificItemOrLocation("");
                 if (val === "Individual") {
                   setPublicBlock("");
                   setPublicFloor("");
@@ -335,7 +385,6 @@ const EditComplaintDialog = ({
           {/* Conditional Fields */}
           {damageType === "Individual" && (
             <div className="space-y-4">
-
               {/* Room Number (auto-filled) */}
               <div className="space-y-2">
                 <Label>Room Number (auto)</Label>
@@ -371,7 +420,6 @@ const EditComplaintDialog = ({
                   </SelectContent>
                 </Select>
               </div>
-
             </div>
           )}
 
@@ -389,7 +437,11 @@ const EditComplaintDialog = ({
                 </div>
                 <div className="space-y-2">
                   <Label>Floor</Label>
-                  <Select value={publicFloor} onValueChange={setPublicFloor} required>
+                  <Select
+                    value={publicFloor}
+                    onValueChange={setPublicFloor}
+                    required
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select floor" />
                     </SelectTrigger>
@@ -416,7 +468,9 @@ const EditComplaintDialog = ({
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Bathroom or Toilet">Bathroom or Toilet</SelectItem>
+                    <SelectItem value="Bathroom or Toilet">
+                      Bathroom or Toilet
+                    </SelectItem>
                     <SelectItem value="Corridor">Corridor</SelectItem>
                     <SelectItem value="Laundry Room">Laundry Room</SelectItem>
                     <SelectItem value="Pantry">Pantry</SelectItem>
@@ -484,7 +538,9 @@ const EditComplaintDialog = ({
 
           {/* Add New Photos */}
           <div className="space-y-2">
-            <Label>Upload New Photos (optional, {maxPhotos - totalPhotos} remaining)</Label>
+            <Label>
+              Upload New Photos (optional, {maxPhotos - totalPhotos} remaining)
+            </Label>
             <div className="flex flex-wrap gap-2">
               {photos.map((photo, index) => (
                 <div key={index} className="relative">

@@ -18,6 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { sessionMiddleware } from "@/components/session/session-tracking-middleware";
+import { sanitizeInput } from "@/lib/sanitize";
+import { validators } from "@/lib/validation";
 import { User } from "lucide-react";
 
 interface EditProfileDialogProps {
@@ -100,17 +103,63 @@ const EditProfileDialog = ({
     setSaving(true);
 
     try {
-      // Validate contact number: must start with +60 and contain digits only
-      const phoneRegex = /^\+60\d{7,14}$/;
-      if (contactNumber && !phoneRegex.test(contactNumber)) {
+      // Enhanced validation
+      const nameValidation = validators.textLength(
+        fullName,
+        2,
+        100,
+        "Full name"
+      );
+      if (!nameValidation.valid) {
         toast({
-          title: "Invalid phone number",
-          description:
-            "Contact number must start with +60 and contain digits only (e.g. +60123456789).",
+          title: "Validation error",
+          description: nameValidation.error,
           variant: "destructive",
         });
         setSaving(false);
         return;
+      }
+
+      // Validate contact number
+      if (contactNumber) {
+        const phoneValidation = validators.phone(contactNumber);
+        if (!phoneValidation.valid) {
+          toast({
+            title: "Invalid phone number",
+            description: phoneValidation.error,
+            variant: "destructive",
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Validate student ID if provided
+      if (role === "student" && studentId) {
+        const idValidation = validators.studentId(studentId);
+        if (!idValidation.valid) {
+          toast({
+            title: "Invalid student ID",
+            description: idValidation.error,
+            variant: "destructive",
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Validate room number if provided
+      if (role === "student" && roomNumber) {
+        const roomValidation = validators.roomNumber(roomNumber);
+        if (!roomValidation.valid) {
+          toast({
+            title: "Invalid room number",
+            description: roomValidation.error,
+            variant: "destructive",
+          });
+          setSaving(false);
+          return;
+        }
       }
 
       // Validate required fields
@@ -134,9 +183,9 @@ const EditProfileDialog = ({
         return;
       }
 
-      // Build update object based on role
+      // Build update object based on role with sanitized data
       const updateData: any = {
-        full_name: fullName.trim(),
+        full_name: sanitizeInput.limitedText(fullName, 100),
         contact_number: contactNumber.trim(),
       };
 
@@ -157,6 +206,11 @@ const EditProfileDialog = ({
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
+      });
+
+      // Log session activity for profile update
+      await sessionMiddleware.logActivity({
+        activityType: "profile_updated",
       });
 
       onOpenChange(false);

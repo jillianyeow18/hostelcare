@@ -5,7 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Send, ArrowLeft, Users, Ticket, Clock, User, Eye, Filter, ChevronDown, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import {
+  Send,
+  ArrowLeft,
+  Users,
+  Ticket,
+  Clock,
+  User,
+  Eye,
+  Filter,
+  ChevronDown,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import StaffSidebar from "@/components/staff/StaffSidebar";
 import {
@@ -27,6 +40,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { sanitizeInput } from "@/lib/sanitize";
 
 // --- INTERFACES ---
 interface SenderData {
@@ -81,55 +95,59 @@ interface TicketGroup {
 const ACTIVITIES_PREVIEW_COUNT = 2;
 
 // --- HELPER FUNCTIONS ---
-const fetchSingleMessageData = async (message: Omit<Message, 'sender' | 'ticket'>): Promise<Message> => {
-    let enrichedMessage: Message = message as Message;
+const fetchSingleMessageData = async (
+  message: Omit<Message, "sender" | "ticket">
+): Promise<Message> => {
+  let enrichedMessage: Message = message as Message;
 
-    if (message.sender_id) {
-        const { data: senderData } = await supabase
-            .from("profiles")
-            .select("full_name, email")
-            .eq("id", message.sender_id)
-            .single();
-        if (senderData) {
-            enrichedMessage.sender = senderData as SenderData;
-        }
+  if (message.sender_id) {
+    const { data: senderData } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", message.sender_id)
+      .single();
+    if (senderData) {
+      enrichedMessage.sender = senderData as SenderData;
     }
+  }
 
-    if (message.ticket_id) {
-        const { data: ticketData } = await supabase
-            .from("tickets")
-            .select(`
+  if (message.ticket_id) {
+    const { data: ticketData } = await supabase
+      .from("tickets")
+      .select(
+        `
                 id,
                 title,
                 status,
                 urgency,
                 assigned_to,
                 assignee:profiles!tickets_assigned_to_fkey(full_name)
-            `)
-            .eq("id", message.ticket_id)
-            .single();
-        if (ticketData) {
-            enrichedMessage.ticket = ticketData as TicketData;
-        }
+            `
+      )
+      .eq("id", message.ticket_id)
+      .single();
+    if (ticketData) {
+      enrichedMessage.ticket = ticketData as TicketData;
     }
+  }
 
-    return enrichedMessage;
+  return enrichedMessage;
 };
 
 const isTicketEscalated = (activities: Message[]) => {
-  return activities.some(activity => 
-    activity.content.toLowerCase().includes('escalation') || 
-    activity.content.includes('🚨') ||
-    activity.content.toLowerCase().includes('urgent')
+  return activities.some(
+    (activity) =>
+      activity.content.toLowerCase().includes("escalation") ||
+      activity.content.includes("🚨") ||
+      activity.content.toLowerCase().includes("urgent")
   );
 };
-
 
 const ChannelChat = () => {
   const { channelId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   // --- STATE ---
   const [profile, setProfile] = useState<any>(null);
   const [channel, setChannel] = useState<Channel | null>(null);
@@ -138,17 +156,21 @@ const ChannelChat = () => {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  
+
   // Ticket filtering
-  const [ticketFilter, setTicketFilter] = useState<"all" | "escalated" | "active" | "resolved">("all");
+  const [ticketFilter, setTicketFilter] = useState<
+    "all" | "escalated" | "active" | "resolved"
+  >("all");
   const [urgencyFilter, setUrgencyFilter] = useState<string>("all");
-  const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
+  const [expandedTickets, setExpandedTickets] = useState<Set<string>>(
+    new Set()
+  );
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Notification tracking
   const [unseenCount, setUnseenCount] = useState(0);
   const hasMarkedAsSeen = useRef(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -158,23 +180,26 @@ const ChannelChat = () => {
   // --- NOTIFICATION FUNCTIONS ---
   const loadUnseenCount = useCallback(async () => {
     if (!profile?.id || !channelId) return;
-    
+
     try {
-      console.log('Loading unseen count for:', { userId: profile.id, channelId });
-      
+      console.log("Loading unseen count for:", {
+        userId: profile.id,
+        channelId,
+      });
+
       const { count, error } = await supabase
         .from("notifications")
-        .select("*", { count: 'exact', head: true })
+        .select("*", { count: "exact", head: true })
         .eq("user_id", profile.id)
         .eq("channel_id", channelId)
         .eq("seen", false);
 
       if (error) {
-        console.error('Error loading unseen count:', error);
+        console.error("Error loading unseen count:", error);
         throw error;
       }
-      
-      console.log('Unseen count:', count);
+
+      console.log("Unseen count:", count);
       setUnseenCount(count || 0);
     } catch (error: any) {
       console.error("Error loading unseen count:", error);
@@ -183,16 +208,16 @@ const ChannelChat = () => {
 
   const markChannelAsSeen = useCallback(async () => {
     if (!profile?.id || !channelId || hasMarkedAsSeen.current) return;
-    
-    console.log('Attempting to mark notifications as seen:', {
+
+    console.log("Attempting to mark notifications as seen:", {
       userId: profile.id,
       channelId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     try {
       hasMarkedAsSeen.current = true;
-      
+
       // First, check what notifications exist
       const { data: beforeUpdate, error: checkError } = await supabase
         .from("notifications")
@@ -200,20 +225,24 @@ const ChannelChat = () => {
         .eq("user_id", profile.id)
         .eq("channel_id", channelId)
         .eq("seen", false);
-      
-      console.log('Found unseen notifications:', beforeUpdate?.length || 0, beforeUpdate);
-      
+
+      console.log(
+        "Found unseen notifications:",
+        beforeUpdate?.length || 0,
+        beforeUpdate
+      );
+
       if (checkError) {
-        console.error('Error checking notifications:', checkError);
+        console.error("Error checking notifications:", checkError);
         throw checkError;
       }
-      
+
       if (!beforeUpdate || beforeUpdate.length === 0) {
-        console.log('ℹNo unseen notifications to update');
+        console.log("ℹNo unseen notifications to update");
         setUnseenCount(0);
         return;
       }
-      
+
       // Now update them
       const { data: updated, error } = await supabase
         .from("notifications")
@@ -224,16 +253,20 @@ const ChannelChat = () => {
         .select();
 
       if (error) {
-        console.error('Error updating notifications:', error);
+        console.error("Error updating notifications:", error);
         throw error;
       }
-      
-      console.log('Successfully marked as seen:', updated?.length || 0, 'notifications');
-      
+
+      console.log(
+        "Successfully marked as seen:",
+        updated?.length || 0,
+        "notifications"
+      );
+
       setUnseenCount(0);
-      
+
       // Emit event for sidebar to update
-      window.dispatchEvent(new CustomEvent('notificationsUpdated'));
+      window.dispatchEvent(new CustomEvent("notificationsUpdated"));
     } catch (error: any) {
       console.error("Error in markChannelAsSeen:", error);
       toast({
@@ -247,7 +280,9 @@ const ChannelChat = () => {
 
   // --- AUTH & DATA LOADING ---
   const checkAuth = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       navigate("/auth");
       return;
@@ -335,7 +370,9 @@ const ChannelChat = () => {
         return;
       }
 
-      const messagePromises = messagesData.map(msg => fetchSingleMessageData(msg as Omit<Message, 'sender' | 'ticket'>));
+      const messagePromises = messagesData.map((msg) =>
+        fetchSingleMessageData(msg as Omit<Message, "sender" | "ticket">)
+      );
       const messagesWithData = await Promise.all(messagePromises);
 
       setMessages(messagesWithData);
@@ -373,18 +410,27 @@ const ChannelChat = () => {
             filter: `channel_id=eq.${channelId}`,
           },
           (payload) => {
-            const newMessageRaw = payload.new as Omit<Message, 'sender' | 'ticket'>;
+            const newMessageRaw = payload.new as Omit<
+              Message,
+              "sender" | "ticket"
+            >;
 
             if (newMessageRaw.sender_id === profile?.id) {
-                return;
+              return;
             }
 
             fetchSingleMessageData(newMessageRaw)
-              .then(enrichedMessage => {
-                setMessages((prevMessages) => [...prevMessages, enrichedMessage]);
-                
+              .then((enrichedMessage) => {
+                setMessages((prevMessages) => [
+                  ...prevMessages,
+                  enrichedMessage,
+                ]);
+
                 // Show toast for escalated tickets
-                if (enrichedMessage.ticket_id && isTicketEscalated([enrichedMessage])) {
+                if (
+                  enrichedMessage.ticket_id &&
+                  isTicketEscalated([enrichedMessage])
+                ) {
                   toast({
                     title: "🚨 Escalated Ticket Alert",
                     description: `Ticket requires immediate attention!`,
@@ -392,7 +438,7 @@ const ChannelChat = () => {
                   });
                 }
               })
-              .catch(err => {
+              .catch((err) => {
                 console.error("Error enriching new message:", err);
               });
           }
@@ -421,7 +467,14 @@ const ChannelChat = () => {
         notificationSubscription.unsubscribe();
       };
     }
-  }, [channelId, profile?.id, loadChannelData, loadMessages, loadMembers, loadUnseenCount]);
+  }, [
+    channelId,
+    profile?.id,
+    loadChannelData,
+    loadMessages,
+    loadMembers,
+    loadUnseenCount,
+  ]);
 
   // Mark channel as seen when user is actively viewing it
   useEffect(() => {
@@ -467,12 +520,16 @@ const ChannelChat = () => {
     scrollToBottom();
 
     try {
-      const { error, data } = await supabase.from("messages").insert({
-        channel_id: channelId,
-        content: contentToSend,
-        sender_id: profile.id,
-        type: "user",
-      }).select().single();
+      const { error, data } = await supabase
+        .from("messages")
+        .insert({
+          channel_id: channelId,
+          content: contentToSend,
+          sender_id: profile.id,
+          type: "user",
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -482,17 +539,16 @@ const ChannelChat = () => {
         sender: optimisticMessage.sender,
       };
 
-      setMessages((prev) => 
+      setMessages((prev) =>
         prev.map((msg) => (msg.id === tempId ? enrichedRealMessage : msg))
       );
-
     } catch (error: any) {
       toast({
         title: "Error sending message",
         description: `Failed to send. ${error.message}`,
         variant: "destructive",
       });
-      setMessages((prev) => prev.filter(msg => msg.id !== tempId));
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
     } finally {
       setSending(false);
     }
@@ -508,9 +564,12 @@ const ChannelChat = () => {
   // --- TICKET PROCESSING WITH MEMOIZATION ---
   const ticketActivityGroups = useMemo(() => {
     const ticketMap = new Map<string, TicketGroup>();
-    
+
     messages.forEach((message) => {
-      if (message.ticket_id && (message.type === "bot" || message.type === "announcement")) {
+      if (
+        message.ticket_id &&
+        (message.type === "bot" || message.type === "announcement")
+      ) {
         if (!ticketMap.has(message.ticket_id)) {
           ticketMap.set(message.ticket_id, {
             ticketId: message.ticket_id,
@@ -539,7 +598,9 @@ const ChannelChat = () => {
       if (a.isEscalated && !b.isEscalated) return -1;
       if (!a.isEscalated && b.isEscalated) return 1;
       // Then by last activity
-      return new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime();
+      return (
+        new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
+      );
     });
   }, [messages, expandedTickets]);
 
@@ -549,28 +610,31 @@ const ChannelChat = () => {
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(group =>
-        group.ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        group.ticket.id.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (group) =>
+          group.ticket.title
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          group.ticket.id.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Status filter
     if (ticketFilter === "escalated") {
-      filtered = filtered.filter(g => g.isEscalated);
+      filtered = filtered.filter((g) => g.isEscalated);
     } else if (ticketFilter === "active") {
-      filtered = filtered.filter(g => 
-        g.ticket.status !== "resolved" && g.ticket.status !== "closed"
+      filtered = filtered.filter(
+        (g) => g.ticket.status !== "resolved" && g.ticket.status !== "closed"
       );
     } else if (ticketFilter === "resolved") {
-      filtered = filtered.filter(g => 
-        g.ticket.status === "resolved" || g.ticket.status === "closed"
+      filtered = filtered.filter(
+        (g) => g.ticket.status === "resolved" || g.ticket.status === "closed"
       );
     }
 
     // Urgency filter
     if (urgencyFilter !== "all") {
-      filtered = filtered.filter(g => g.ticket.urgency === urgencyFilter);
+      filtered = filtered.filter((g) => g.ticket.urgency === urgencyFilter);
     }
 
     return filtered;
@@ -586,12 +650,12 @@ const ChannelChat = () => {
   const ticketStats = useMemo(() => {
     const stats = {
       total: ticketActivityGroups.length,
-      escalated: ticketActivityGroups.filter(g => g.isEscalated).length,
-      active: ticketActivityGroups.filter(g => 
-        g.ticket.status !== "resolved" && g.ticket.status !== "closed"
+      escalated: ticketActivityGroups.filter((g) => g.isEscalated).length,
+      active: ticketActivityGroups.filter(
+        (g) => g.ticket.status !== "resolved" && g.ticket.status !== "closed"
       ).length,
-      resolved: ticketActivityGroups.filter(g => 
-        g.ticket.status === "resolved" || g.ticket.status === "closed"
+      resolved: ticketActivityGroups.filter(
+        (g) => g.ticket.status === "resolved" || g.ticket.status === "closed"
       ).length,
     };
     return stats;
@@ -599,7 +663,7 @@ const ChannelChat = () => {
 
   // --- TOGGLE TICKET EXPANSION ---
   const toggleTicketExpansion = (ticketId: string) => {
-    setExpandedTickets(prev => {
+    setExpandedTickets((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(ticketId)) {
         newSet.delete(ticketId);
@@ -614,8 +678,14 @@ const ChannelChat = () => {
   const getStatusBadge = (status: string) => {
     const configs: Record<string, { label: string; className: string }> = {
       pending: { label: "Pending", className: "bg-gray-100 text-gray-800" },
-      assigned: { label: "Assigned", className: "bg-purple-100 text-purple-800" },
-      in_progress: { label: "In Progress", className: "bg-orange-100 text-orange-800" },
+      assigned: {
+        label: "Assigned",
+        className: "bg-purple-100 text-purple-800",
+      },
+      in_progress: {
+        label: "In Progress",
+        className: "bg-orange-100 text-orange-800",
+      },
       resolved: { label: "Resolved", className: "bg-green-100 text-green-800" },
       closed: { label: "Closed", className: "bg-gray-100 text-gray-600" },
     };
@@ -635,7 +705,10 @@ const ChannelChat = () => {
       low: "bg-green-100 text-green-800",
     };
     return (
-      <Badge variant="secondary" className={`${configs[urgency] || configs.medium} text-xs`}>
+      <Badge
+        variant="secondary"
+        className={`${configs[urgency] || configs.medium} text-xs`}
+      >
         {urgency}
       </Badge>
     );
@@ -656,7 +729,9 @@ const ChannelChat = () => {
 
     if (!ticket) return null;
 
-    const activitiesToShow = isExpanded ? activities : activities.slice(-ACTIVITIES_PREVIEW_COUNT);
+    const activitiesToShow = isExpanded
+      ? activities
+      : activities.slice(-ACTIVITIES_PREVIEW_COUNT);
 
     return (
       <Collapsible
@@ -664,25 +739,27 @@ const ChannelChat = () => {
         open={isExpanded}
         onOpenChange={() => toggleTicketExpansion(group.ticketId)}
       >
-        <div 
+        <div
           className={`rounded-lg p-4 mb-3 shadow-sm transition-all duration-200 ${
-            isEscalated 
-              ? 'bg-red-50 border-2 border-red-500' 
-              : 'bg-white border border-gray-200'
+            isEscalated
+              ? "bg-red-50 border-2 border-red-500"
+              : "bg-white border border-gray-200"
           } hover:shadow-md`}
         >
           {/* Compact Header */}
           <div className="flex gap-3">
             <Avatar className="h-9 w-9 shrink-0">
-              <AvatarFallback className={`${
-                isEscalated 
-                  ? 'bg-red-100 text-red-700' 
-                  : 'bg-blue-100 text-blue-600'
-              }`}>
+              <AvatarFallback
+                className={`${
+                  isEscalated
+                    ? "bg-red-100 text-red-700"
+                    : "bg-blue-100 text-blue-600"
+                }`}
+              >
                 <Ticket className="h-4 w-4" />
               </AvatarFallback>
             </Avatar>
-            
+
             <div className="flex-1 min-w-0">
               {/* Escalation Banner (Collapsed State) */}
               {isEscalated && !isExpanded && (
@@ -695,9 +772,11 @@ const ChannelChat = () => {
               {/* Ticket Info */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <h3 className={`font-semibold text-sm mb-1 truncate ${
-                    isEscalated ? 'text-red-700' : 'text-gray-900'
-                  }`}>
+                  <h3
+                    className={`font-semibold text-sm mb-1 truncate ${
+                      isEscalated ? "text-red-700" : "text-gray-900"
+                    }`}
+                  >
                     Ticket #{ticket.id.substring(0, 8)} - {ticket.title}
                   </h3>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -705,12 +784,18 @@ const ChannelChat = () => {
                     {getUrgencyBadge(ticket.urgency)}
                   </div>
                 </div>
-                
+
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="shrink-0 h-8 w-8 p-0">
-                    <ChevronDown className={`h-4 w-4 transition-transform ${
-                      isExpanded ? 'rotate-180' : ''
-                    }`} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 h-8 w-8 p-0"
+                  >
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${
+                        isExpanded ? "rotate-180" : ""
+                      }`}
+                    />
                   </Button>
                 </CollapsibleTrigger>
               </div>
@@ -719,7 +804,11 @@ const ChannelChat = () => {
               {!isExpanded && (
                 <div className="mt-2 text-xs text-gray-600 flex items-center gap-2">
                   <Clock className="h-3 w-3" />
-                  <span>{formatDistanceToNow(new Date(latestActivity.created_at), { addSuffix: true })}</span>
+                  <span>
+                    {formatDistanceToNow(new Date(latestActivity.created_at), {
+                      addSuffix: true,
+                    })}
+                  </span>
                   <span className="text-gray-400">•</span>
                   <span>{activities.length} updates</span>
                 </div>
@@ -730,7 +819,6 @@ const ChannelChat = () => {
           {/* Expanded Content */}
           <CollapsibleContent>
             <div className="mt-3 pl-12 space-y-2">
-
               {/* Assignee */}
               <div className="flex items-center gap-2 text-xs text-gray-600 pb-2 border-b">
                 <User className="h-3 w-3" />
@@ -743,27 +831,32 @@ const ChannelChat = () => {
               {/* Activities */}
               <div className="space-y-2">
                 {activitiesToShow.map((activity: Message) => {
-                  const isEscalationMsg = activity.content.toLowerCase().includes('escalation') || 
-                                         activity.content.includes('🚨');
-                  
+                  const isEscalationMsg =
+                    activity.content.toLowerCase().includes("escalation") ||
+                    activity.content.includes("🚨");
+
                   return (
-                    <div 
-                      key={activity.id} 
+                    <div
+                      key={activity.id}
                       className={`text-xs rounded p-2 ${
-                        isEscalationMsg 
-                          ? 'bg-red-100 border-l-2 border-red-600 font-semibold text-red-900' 
-                          : 'bg-gray-50 text-gray-700'
+                        isEscalationMsg
+                          ? "bg-red-100 border-l-2 border-red-600 font-semibold text-red-900"
+                          : "bg-gray-50 text-gray-700"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div 
+                        <div
                           className="flex-1"
                           dangerouslySetInnerHTML={{
-                            __html: formatActivityContent(activity.content),
+                            __html: sanitizeInput.comment(
+                              formatActivityContent(activity.content)
+                            ),
                           }}
                         />
                         <span className="text-gray-500 shrink-0 text-[10px]">
-                          {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(activity.created_at), {
+                            addSuffix: true,
+                          })}
                         </span>
                       </div>
                     </div>
@@ -779,8 +872,12 @@ const ChannelChat = () => {
 
   const renderRegularMessage = (message: Message) => {
     const isBot = message.type === "bot" || message.type === "announcement";
-    const senderName = isBot ? "HostelCare" : message.sender?.full_name || "Unknown";
-    const senderInitials = isBot ? "HC" : message.sender?.full_name?.charAt(0)?.toUpperCase() || "?";
+    const senderName = isBot
+      ? "HostelCare"
+      : message.sender?.full_name || "Unknown";
+    const senderInitials = isBot
+      ? "HC"
+      : message.sender?.full_name?.charAt(0)?.toUpperCase() || "?";
 
     return (
       <div
@@ -884,7 +981,9 @@ const ChannelChat = () => {
                 {ticketStats.escalated > 0 && (
                   <div className="flex items-center gap-2 text-sm">
                     <AlertCircle className="h-4 w-4 text-red-600" />
-                    <span className="font-semibold text-red-600">{ticketStats.escalated}</span>
+                    <span className="font-semibold text-red-600">
+                      {ticketStats.escalated}
+                    </span>
                     <span className="text-gray-600">Escalated</span>
                   </div>
                 )}
@@ -908,8 +1007,11 @@ const ChannelChat = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="max-w-xs h-9 text-sm"
                 />
-                
-                <Select value={ticketFilter} onValueChange={(value: any) => setTicketFilter(value)}>
+
+                <Select
+                  value={ticketFilter}
+                  onValueChange={(value: any) => setTicketFilter(value)}
+                >
                   <SelectTrigger className="w-[140px] h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
@@ -921,7 +1023,10 @@ const ChannelChat = () => {
                   </SelectContent>
                 </Select>
 
-                <Select value={urgencyFilter} onValueChange={(value) => setUrgencyFilter(value)}>
+                <Select
+                  value={urgencyFilter}
+                  onValueChange={(value) => setUrgencyFilter(value)}
+                >
                   <SelectTrigger className="w-[130px] h-9 text-sm">
                     <SelectValue placeholder="Urgency" />
                   </SelectTrigger>
@@ -935,7 +1040,8 @@ const ChannelChat = () => {
                 </Select>
 
                 <div className="ml-auto text-xs text-gray-600">
-                  Showing {Math.min(4, filteredTickets.length)} of {filteredTickets.length}
+                  Showing {Math.min(4, filteredTickets.length)} of{" "}
+                  {filteredTickets.length}
                 </div>
               </div>
             </div>
@@ -961,21 +1067,26 @@ const ChannelChat = () => {
                   {filteredTickets.length > 0 && (
                     <div className="mb-6">
                       <div className="max-h-[400px] overflow-y-auto pr-2 space-y-0">
-                        {filteredTickets.slice(0, 4).map(renderTicketActivityGroup)}
+                        {filteredTickets
+                          .slice(0, 4)
+                          .map(renderTicketActivityGroup)}
                       </div>
                       {filteredTickets.length > 4 && (
                         <div className="mt-3 text-center">
                           <p className="text-xs text-gray-500 bg-gray-100 inline-block px-3 py-1.5 rounded-full">
-                            Scroll up to see all {filteredTickets.length} tickets
+                            Scroll up to see all {filteredTickets.length}{" "}
+                            tickets
                           </p>
                         </div>
                       )}
                     </div>
                   )}
-                  
+
                   {/* Regular Messages */}
                   <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3 px-4">Discussion</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3 px-4">
+                      Discussion
+                    </h3>
                     {regularMessages.map(renderRegularMessage)}
                   </div>
                 </>
@@ -992,7 +1103,7 @@ const ChannelChat = () => {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={`Message #${channel?.name || 'channel'}`}
+                  placeholder={`Message #${channel?.name || "channel"}`}
                   className="flex-1"
                   disabled={sending}
                 />

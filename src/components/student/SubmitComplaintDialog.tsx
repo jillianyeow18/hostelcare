@@ -19,7 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { sessionMiddleware } from "@/components/session/session-tracking-middleware";
 import { ImagePlus, X } from "lucide-react";
+import { sanitizeInput } from "@/lib/sanitize";
+import { validators } from "@/lib/validation";
 
 interface SubmitComplaintDialogProps {
   open: boolean;
@@ -42,9 +45,11 @@ const SubmitComplaintDialog = ({
   const [specificItemOrLocation, setSpecificItemOrLocation] = useState("");
   const [urgency, setUrgency] = useState("medium");
   const [photos, setPhotos] = useState<File[]>([]);
-  const [individualRoom, setIndividualRoom] = useState(profile?.room_number || "");
-  const [publicBlock, setPublicBlock] = useState(""); 
-  const [publicFloor, setPublicFloor] = useState(""); 
+  const [individualRoom, setIndividualRoom] = useState(
+    profile?.room_number || ""
+  );
+  const [publicBlock, setPublicBlock] = useState("");
+  const [publicFloor, setPublicFloor] = useState("");
 
   // Load user profile data
   useEffect(() => {
@@ -71,8 +76,30 @@ const SubmitComplaintDialog = ({
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newPhotos = Array.from(e.target.files).slice(0, 5 - photos.length);
-      setPhotos([...photos, ...newPhotos]);
+      const files = Array.from(e.target.files).slice(0, 5 - photos.length);
+
+      // Validate each file
+      const validFiles: File[] = [];
+      const fileErrors: string[] = [];
+
+      files.forEach((file) => {
+        const validation = validators.file.validate(file, 5);
+        if (validation.valid) {
+          validFiles.push(file);
+        } else {
+          fileErrors.push(`${file.name}: ${validation.error}`);
+        }
+      });
+
+      if (fileErrors.length > 0) {
+        toast({
+          title: "Invalid files",
+          description: fileErrors.join("\n"),
+          variant: "destructive",
+        });
+      }
+
+      setPhotos([...photos, ...validFiles]);
     }
   };
 
@@ -85,22 +112,36 @@ const SubmitComplaintDialog = ({
     setLoading(true);
 
     const errors: string[] = [];
-    const allowedUrgency = ["low", "medium", "high", "urgent"];
 
-    if (!title.trim()) errors.push("Title is required.");
-    if (!category.trim()) errors.push("Category is required.");
+    // Enhanced validation with detailed error messages
+    const titleValidation = validators.textLength(title, 3, 200, "Title");
+    if (!titleValidation.valid) errors.push(titleValidation.error!);
+
+    const descValidation = validators.textLength(
+      description,
+      10,
+      2000,
+      "Description"
+    );
+    if (!descValidation.valid) errors.push(descValidation.error!);
+
+    const categoryValidation = validators.category(category);
+    if (!categoryValidation.valid) errors.push(categoryValidation.error!);
+
+    const urgencyValidation = validators.urgency(urgency);
+    if (!urgencyValidation.valid) errors.push(urgencyValidation.error!);
+
     if (!damageType.trim()) errors.push("Damage Type is required.");
     if (!specificItemOrLocation.trim())
       errors.push("Please select a specific item/location.");
-    if (!description.trim()) errors.push("Description is required.");
-    if (!urgency || !allowedUrgency.includes(urgency))
-      errors.push("Please select a valid urgency level.");
     if (!profile?.desasiswa) errors.push("Your desasiswa is not set.");
     if (!profile?.room_number) errors.push("Your room number is not set.");
 
     if (damageType === "Public") {
-      if (!publicBlock.trim()) errors.push("Block is required for public damage.");
-      if (!publicFloor.trim()) errors.push("Floor is required for public damage.");
+      if (!publicBlock.trim())
+        errors.push("Block is required for public damage.");
+      if (!publicFloor.trim())
+        errors.push("Floor is required for public damage.");
     }
 
     if (photos.length > 5) errors.push("You can upload up to 5 photos only.");
@@ -123,22 +164,33 @@ const SubmitComplaintDialog = ({
 
       const block =
         damageType === "Public" && publicBlock
-          ? publicBlock.trim().replace(/\s+/g, "").toUpperCase()
+          ? sanitizeInput.text(
+              publicBlock.trim().replace(/\s+/g, "").toUpperCase()
+            )
           : null;
-      const floor = damageType === "Public" ? publicFloor : null;
+      const floor =
+        damageType === "Public" ? sanitizeInput.text(publicFloor) : null;
+
+      // Sanitize all text inputs before submission
+      const sanitizedTitle = sanitizeInput.limitedText(title, 200);
+      const sanitizedDescription = sanitizeInput.limitedText(description, 2000);
+      const sanitizedLocation = sanitizeInput.limitedText(
+        specificItemOrLocation,
+        200
+      );
 
       const { data: ticket, error: ticketError } = await supabase
         .from("tickets")
         .insert({
-          title,
-          description,
+          title: sanitizedTitle,
+          description: sanitizedDescription,
           category,
           urgency,
           status: "pending",
           created_by: user.id,
           desasiswa: profile?.desasiswa,
           damage_type: damageType,
-          specific_item_or_location: specificItemOrLocation,
+          specific_item_or_location: sanitizedLocation,
           individual_room: individualRoom,
           public_block: block,
           public_floor: floor,
@@ -158,7 +210,9 @@ const SubmitComplaintDialog = ({
 
           if (uploadError) continue;
 
-          const { data: { publicUrl } } = supabase.storage
+          const {
+            data: { publicUrl },
+          } = supabase.storage
             .from("ticket-attachments")
             .getPublicUrl(fileName);
 
@@ -175,6 +229,17 @@ const SubmitComplaintDialog = ({
       toast({
         title: "Complaint submitted",
         description: "Your maintenance request has been received.",
+      });
+
+      // Log session activity for complaint submission
+      await sessionMiddleware.logActivity({
+        activityType: "complaint_submitted",
+        metadata: {
+          ticket_id: ticket.id,
+          category,
+          urgency,
+          damage_type: damageType,
+        },
       });
 
       // Reset form
@@ -268,7 +333,7 @@ const SubmitComplaintDialog = ({
               value={damageType}
               onValueChange={(val) => {
                 setDamageType(val);
-                setSpecificItemOrLocation(""); 
+                setSpecificItemOrLocation("");
                 if (val === "Individual") {
                   setPublicBlock("");
                   setPublicFloor("");
@@ -292,7 +357,6 @@ const SubmitComplaintDialog = ({
           {/* Conditional Fields */}
           {damageType === "Individual" && (
             <div className="space-y-4">
-
               {/* Room Number (auto-filled) */}
               <div className="space-y-2">
                 <Label>Room Number</Label>
@@ -328,7 +392,6 @@ const SubmitComplaintDialog = ({
                   </SelectContent>
                 </Select>
               </div>
-
             </div>
           )}
           {damageType === "Public" && (
@@ -345,7 +408,11 @@ const SubmitComplaintDialog = ({
                 </div>
                 <div className="space-y-2">
                   <Label>Floor</Label>
-                  <Select value={publicFloor} onValueChange={setPublicFloor} required>
+                  <Select
+                    value={publicFloor}
+                    onValueChange={setPublicFloor}
+                    required
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select floor" />
                     </SelectTrigger>
@@ -372,7 +439,9 @@ const SubmitComplaintDialog = ({
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Bathroom or Toilet">Bathroom or Toilet</SelectItem>
+                    <SelectItem value="Bathroom or Toilet">
+                      Bathroom or Toilet
+                    </SelectItem>
                     <SelectItem value="Corridor">Corridor</SelectItem>
                     <SelectItem value="Laundry Room">Laundry Room</SelectItem>
                     <SelectItem value="Pantry">Pantry</SelectItem>

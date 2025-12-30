@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { sessionMiddleware } from "@/components/session/session-tracking-middleware";
 import logo from "@/assets/hostelcare-logo.png";
 
 const Auth = () => {
@@ -61,6 +62,9 @@ const Auth = () => {
           .select("role")
           .eq("id", data.user.id)
           .single();
+
+        // Create session entry for tracking
+        await sessionMiddleware.createSession();
 
         toast({
           title: "Welcome back!",

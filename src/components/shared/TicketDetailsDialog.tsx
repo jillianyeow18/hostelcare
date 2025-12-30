@@ -10,6 +10,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { sessionMiddleware } from "@/components/session/session-tracking-middleware";
+import { sanitizeInput } from "@/lib/sanitize";
+import { validators } from "@/lib/validation";
 import { MessageSquare, Send, User, Star, ThumbsUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +45,7 @@ const TicketDetailsDialog = ({
   const [userRole, setUserRole] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [localStatus, setLocalStatus] = useState(ticket?.status);
-  
+
   // Rating and feedback states
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
@@ -56,6 +59,15 @@ const TicketDetailsDialog = ({
       loadComments();
       loadUserRole();
       setLocalStatus(ticket?.status);
+
+      // Log session activity for viewing ticket
+      sessionMiddleware.logActivity({
+        activityType: "ticket_viewed",
+        metadata: {
+          ticket_id: ticket.id,
+          ticket_status: ticket.status,
+        },
+      });
     }
   }, [open, ticket]);
 
@@ -175,6 +187,22 @@ const TicketDetailsDialog = ({
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return;
 
+    // Validate comment
+    const commentValidation = validators.textLength(
+      newComment,
+      1,
+      1000,
+      "Comment"
+    );
+    if (!commentValidation.valid) {
+      toast({
+        title: "Invalid comment",
+        description: commentValidation.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const {
@@ -182,9 +210,12 @@ const TicketDetailsDialog = ({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Sanitize comment content
+      const sanitizedComment = sanitizeInput.limitedText(newComment, 1000);
+
       const { error } = await supabase.from("comments").insert({
         ticket_id: ticket.id,
-        content: newComment.trim(),
+        content: sanitizedComment,
         created_by: user.id,
       });
 
@@ -193,6 +224,14 @@ const TicketDetailsDialog = ({
       toast({
         title: "Comment added",
         description: "Your comment has been posted successfully.",
+      });
+
+      // Log session activity for adding comment
+      await sessionMiddleware.logActivity({
+        activityType: "comment_added",
+        metadata: {
+          ticket_id: ticket.id,
+        },
       });
 
       setNewComment("");
@@ -243,11 +282,11 @@ const TicketDetailsDialog = ({
 
       // Reload feedback to show the submitted one
       await loadFeedback();
-      
+
       // Reset form
       setRating(0);
       setFeedback("");
-      
+
       onUpdate();
     } catch (error: any) {
       console.error("Error submitting feedback:", error);
@@ -323,7 +362,7 @@ const TicketDetailsDialog = ({
       });
 
       onUpdate(); // Refresh the ticket data
-      
+
       // If changed to resolved, load feedback section
       if (newStatus === "resolved") {
         loadFeedback();
@@ -339,9 +378,12 @@ const TicketDetailsDialog = ({
     }
   };
 
-  const renderStars = (isInteractive: boolean = true, displayRating?: number) => {
+  const renderStars = (
+    isInteractive: boolean = true,
+    displayRating?: number
+  ) => {
     const ratingToUse = displayRating !== undefined ? displayRating : rating;
-    
+
     return (
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -353,12 +395,15 @@ const TicketDetailsDialog = ({
             onMouseEnter={() => isInteractive && setHoveredRating(star)}
             onMouseLeave={() => isInteractive && setHoveredRating(0)}
             className={`transition-all ${
-              isInteractive ? "cursor-pointer hover:scale-110" : "cursor-default"
+              isInteractive
+                ? "cursor-pointer hover:scale-110"
+                : "cursor-default"
             }`}
           >
             <Star
               className={`h-8 w-8 ${
-                star <= (isInteractive ? (hoveredRating || ratingToUse) : ratingToUse)
+                star <=
+                (isInteractive ? hoveredRating || ratingToUse : ratingToUse)
                   ? "fill-yellow-400 text-yellow-400"
                   : "text-gray-300"
               }`}
@@ -379,7 +424,7 @@ const TicketDetailsDialog = ({
     // For staff: only show if feedback exists (read-only view)
     if (userRole === "staff") {
       if (!existingFeedback && !loadingFeedback) return null;
-      
+
       return (
         <div className="border-t pt-6">
           <div className="flex items-center gap-2 mb-4">
@@ -400,16 +445,20 @@ const TicketDetailsDialog = ({
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-500 mb-1">
-                    Submitted by: {existingFeedback.profiles?.full_name || "Unknown"}
+                    Submitted by:{" "}
+                    {existingFeedback.profiles?.full_name || "Unknown"}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(existingFeedback.created_at), {
-                      addSuffix: true,
-                    })}
+                    {formatDistanceToNow(
+                      new Date(existingFeedback.created_at),
+                      {
+                        addSuffix: true,
+                      }
+                    )}
                   </p>
                 </div>
               </div>
-              
+
               {existingFeedback.feedback && (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">Feedback</p>
@@ -430,7 +479,9 @@ const TicketDetailsDialog = ({
         <div className="border-t pt-6">
           <div className="flex items-center gap-2 mb-4">
             <ThumbsUp className="h-5 w-5 text-[#7323A8]" />
-            <h3 className="font-semibold text-[#32004F]">Resolution Feedback</h3>
+            <h3 className="font-semibold text-[#32004F]">
+              Resolution Feedback
+            </h3>
           </div>
 
           {loadingFeedback ? (
@@ -448,13 +499,16 @@ const TicketDetailsDialog = ({
                 <div className="text-right">
                   <p className="text-xs text-gray-500">
                     Submitted{" "}
-                    {formatDistanceToNow(new Date(existingFeedback.created_at), {
-                      addSuffix: true,
-                    })}
+                    {formatDistanceToNow(
+                      new Date(existingFeedback.created_at),
+                      {
+                        addSuffix: true,
+                      }
+                    )}
                   </p>
                 </div>
               </div>
-              
+
               {existingFeedback.feedback && (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">Your Feedback</p>
@@ -463,19 +517,22 @@ const TicketDetailsDialog = ({
                   </p>
                 </div>
               )}
-              
+
               <div className="mt-4 flex items-center gap-2 text-green-600">
                 <ThumbsUp className="h-4 w-4" />
-                <span className="text-sm font-medium">Thank you for your feedback!</span>
+                <span className="text-sm font-medium">
+                  Thank you for your feedback!
+                </span>
               </div>
             </div>
           ) : (
             // Feedback submission form (one-time only)
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 border-2 border-purple-200">
               <p className="text-gray-700 mb-4">
-                This ticket has been resolved. Please rate your experience and provide feedback to help us improve our service.
+                This ticket has been resolved. Please rate your experience and
+                provide feedback to help us improve our service.
               </p>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-[#32004F] mb-2">
@@ -529,7 +586,7 @@ const TicketDetailsDialog = ({
   };
 
   if (!ticket) {
-}
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -558,10 +615,44 @@ const TicketDetailsDialog = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending"disabled={ticket.status === "in_progress" ||ticket.status === "resolved" } > Pending </SelectItem>
-                    <SelectItem value="assigned" disabled={ ticket.status === "in_progress" || ticket.status === "resolved"  } > Assigned </SelectItem>
-                    <SelectItem value="in_progress" disabled={ ticket.status === "resolved" || ticket.status === "pending" }>In Progress </SelectItem>
-                    <SelectItem value="resolved" disabled={ ticket.status === "pending" || ticket.status === "assigned" }>Resolved</SelectItem>
+                    <SelectItem
+                      value="pending"
+                      disabled={
+                        ticket.status === "in_progress" ||
+                        ticket.status === "resolved"
+                      }
+                    >
+                      {" "}
+                      Pending{" "}
+                    </SelectItem>
+                    <SelectItem
+                      value="assigned"
+                      disabled={
+                        ticket.status === "in_progress" ||
+                        ticket.status === "resolved"
+                      }
+                    >
+                      {" "}
+                      Assigned{" "}
+                    </SelectItem>
+                    <SelectItem
+                      value="in_progress"
+                      disabled={
+                        ticket.status === "resolved" ||
+                        ticket.status === "pending"
+                      }
+                    >
+                      In Progress{" "}
+                    </SelectItem>
+                    <SelectItem
+                      value="resolved"
+                      disabled={
+                        ticket.status === "pending" ||
+                        ticket.status === "assigned"
+                      }
+                    >
+                      Resolved
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
@@ -574,7 +665,9 @@ const TicketDetailsDialog = ({
             </div>
             <div>
               <p className="text-sm text-gray-600">Item or Location</p>
-              <p className="font-medium text-[#32004F]">{ticket?.specific_item_or_location}</p>
+              <p className="font-medium text-[#32004F]">
+                {ticket?.specific_item_or_location}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Created</p>
@@ -587,16 +680,15 @@ const TicketDetailsDialog = ({
             </div>
             <div>
               <p className="text-sm text-gray-600">Attachment</p>
-                {ticket?.attachments?.length > 0 ? (
-                  <img
-                    src={ticket.attachments[0].file_url}
-                    alt={ticket.attachments[0].file_name}
-                    className="max-w-full h-auto mt-2 rounded shadow"
-                  />
-                ) : (
-                  <p className="text-gray-400">No attachment</p>
-                )}
-
+              {ticket?.attachments?.length > 0 ? (
+                <img
+                  src={ticket.attachments[0].file_url}
+                  alt={ticket.attachments[0].file_name}
+                  className="max-w-full h-auto mt-2 rounded shadow"
+                />
+              ) : (
+                <p className="text-gray-400">No attachment</p>
+              )}
             </div>
           </div>
 

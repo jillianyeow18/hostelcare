@@ -170,7 +170,6 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
-        
       };
       comments: {
         Row: {
@@ -264,7 +263,7 @@ export type Database = {
           created_by: string;
           description: string;
           id: string;
-          desasiswa: string;          
+          desasiswa: string;
           damage_type: string;
           specific_item_or_location: string;
           individual_room: string | null;
@@ -367,54 +366,54 @@ export type Database = {
         ];
       };
       notifications: {
-  Row: {
-    id: string;
-    channel_id: string;
-    user_id: string;
-    message_id: string | null;
-    seen: boolean;
-    created_at: string;
-  };
-  Insert: {
-    id?: string;
-    channel_id: string;
-    user_id: string;
-    message_id?: string | null;
-    seen?: boolean;
-    created_at?: string;
-  };
-  Update: {
-    id?: string;
-    channel_id?: string;
-    user_id?: string;
-    message_id?: string | null;
-    seen?: boolean;
-    created_at?: string;
-  };
-  Relationships: [
-    {
-      foreignKeyName: "notifications_channel_id_fkey";
-      columns: ["channel_id"];
-      isOneToOne: false;
-      referencedRelation: "channels";
-      referencedColumns: ["id"];
-    },
-    {
-      foreignKeyName: "notifications_user_id_fkey";
-      columns: ["user_id"];
-      isOneToOne: false;
-      referencedRelation: "profiles";
-      referencedColumns: ["id"];
-    },
-    {
-      foreignKeyName: "notifications_message_id_fkey";
-      columns: ["message_id"];
-      isOneToOne: false;
-      referencedRelation: "messages";
-      referencedColumns: ["id"];
-    }
-  ];
-};
+        Row: {
+          id: string;
+          channel_id: string;
+          user_id: string;
+          message_id: string | null;
+          seen: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          channel_id: string;
+          user_id: string;
+          message_id?: string | null;
+          seen?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          channel_id?: string;
+          user_id?: string;
+          message_id?: string | null;
+          seen?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_channel_id_fkey";
+            columns: ["channel_id"];
+            isOneToOne: false;
+            referencedRelation: "channels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
 
       user_roles: {
         Row: {
@@ -437,6 +436,146 @@ export type Database = {
         };
         Relationships: [];
       };
+      session_activities: {
+        Row: {
+          id: string;
+          session_id: string | null;
+          user_id: string;
+          activity_type:
+            | "login"
+            | "logout"
+            | "page_view"
+            | "interaction"
+            | "idle_warning"
+            | "session_refresh"
+            | "token_refresh"
+            | "complaint_submitted"
+            | "complaint_updated"
+            | "complaint_deleted"
+            | "ticket_viewed"
+            | "comment_added"
+            | "profile_updated"
+            | "role_changed"
+            | "password_changed";
+          page_path: string | null;
+          metadata: Json;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id?: string | null;
+          user_id: string;
+          activity_type:
+            | "login"
+            | "logout"
+            | "page_view"
+            | "interaction"
+            | "idle_warning"
+            | "session_refresh"
+            | "token_refresh"
+            | "complaint_submitted"
+            | "complaint_updated"
+            | "complaint_deleted"
+            | "ticket_viewed"
+            | "comment_added"
+            | "profile_updated"
+            | "role_changed"
+            | "password_changed";
+          page_path?: string | null;
+          metadata?: Json;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string | null;
+          user_id?: string;
+          activity_type?:
+            | "login"
+            | "logout"
+            | "page_view"
+            | "interaction"
+            | "idle_warning"
+            | "session_refresh"
+            | "token_refresh"
+            | "complaint_submitted"
+            | "complaint_updated"
+            | "complaint_deleted"
+            | "ticket_viewed"
+            | "comment_added"
+            | "profile_updated"
+            | "role_changed"
+            | "password_changed";
+          page_path?: string | null;
+          metadata?: Json;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_activities_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_activities_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "user_sessions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      user_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          login_time: string;
+          logout_time: string | null;
+          last_activity: string;
+          ip_address: string | null;
+          user_agent: string | null;
+          device_info: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          login_time?: string;
+          logout_time?: string | null;
+          last_activity?: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          device_info?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          login_time?: string;
+          logout_time?: string | null;
+          last_activity?: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          device_info?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -453,6 +592,18 @@ export type Database = {
         Args: { p_category: string; p_content: string; p_ticket_id?: string };
         Returns: undefined;
       };
+      update_last_activity: {
+        Args: { p_user_id: string };
+        Returns: void;
+      };
+      cleanup_session_data: {
+        Args: Record<string, never>;
+        Returns: {
+          deleted_page_views: number;
+          deleted_old_activities: number;
+          deleted_old_sessions: number;
+        }[];
+      };
     };
     Enums: {
       app_role: "staff" | "student";
@@ -461,7 +612,6 @@ export type Database = {
       [_ in never]: never;
     };
   };
-  
 };
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
